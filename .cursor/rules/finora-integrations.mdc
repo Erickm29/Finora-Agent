@@ -1,0 +1,27 @@
+---
+description: Integraciones Finora — OpenAI, Firecrawl, Exa, Wallbit, Zavu, ElevenLabs, Supabase
+alwaysApply: false
+---
+
+# Finora — integraciones
+
+Usar esta regla al tocar APIs, clientes HTTP, webhooks o persistencia.
+
+| Servicio | Uso en Finora |
+|----------|----------------|
+| OpenAI | Cerebro conversacional y razonamiento del agente |
+| Firecrawl | Precios reales de productos en la web |
+| Exa | Macroeconomía, noticias, contexto de mercado |
+| Wallbit | Patrimonio y preparación de conversión a divisas estables |
+| Zavu | Recordatorios y alertas (principalmente Telegram) |
+| ElevenLabs | Resúmenes financieros por voz |
+| Supabase | Metas, progreso, historial de transacciones |
+
+## Convenciones
+
+- Credenciales solo vía variables de entorno (`.env`); nunca en código
+- Wallbit: preparar operación y esperar confirmación del usuario
+- Firecrawl/Exa: no inventar datos de mercado si la API falla; degradar con mensaje claro
+- Supabase: modelar metas, aportes, retiros e historial de forma auditable
+
+Detalle de flujo: `docs/context/architecture.md`

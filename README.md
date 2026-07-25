@@ -31,7 +31,7 @@ El verdadero problema financiero de la mayoría de las personas no radica en sab
 
 ## 💡 ¿Por qué Finora Agent? (El Gran Diferencial)
 
-A diferencia de las aplicaciones bancarias tradicionales o las calculadoras de ahorro estáticas que se limitan a mostrar gráficos aburridos, **Finora Agent actúa como un mentor financiero personal y activo**. 
+A diferencia de las aplicaciones bancarias tradicionales o las calculadoras de ahorro estáticas que se limitan a mostrar gráficos aburridos, **Finora Agent actúa como un mentor financiero personal y activo**.
 
 El "wow factor" del proyecto descansa sobre cuatro pilares fundamentales:
 1. **Metas centradas en deseos reales**, no en la venta de productos financieros ajenos al usuario.
@@ -56,7 +56,7 @@ El "wow factor" del proyecto descansa sobre cuatro pilares fundamentales:
 
 El ecosistema de servicios que da vida a **Finora Agent** integra APIs de última generación especializadas en inteligencia artificial, extracción de datos y gestión financiera:
 
-* **Cerebro Conversacional y Razonamiento:** `OpenAI (LLM)` <!-- TODO: Specify model version, e.g., GPT-4o -->
+* **Cerebro Conversacional y Razonamiento:** `OpenAI (LLM)`
 * **Extracción de Datos y Precios de Mercado:** `Firecrawl` (Para rastrear precios reales de productos en la web)
 * **Contexto Económico y Análisis:** `Exa` (Para la búsqueda avanzada de variables macroeconómicas)
 * **Gestión Patrimonial y Divisas:** `Wallbit` (Para consultar patrimonio y preparar operaciones de protección de ahorro)
@@ -70,18 +70,18 @@ El ecosistema de servicios que da vida a **Finora Agent** integra APIs de últim
 
 El ciclo de vida de una interacción típica dentro del sistema sigue estos pasos:
 
-1. **Definición de Meta:** 
+1. **Definición de Meta:**
    * *Usuario:* "Quiero comprar una MacBook." *Opcional*
-2. **Investigación Autónoma:** 
+2. **Investigación Autónoma:**
    * *Finora Agent:* Consulta precio actual, tipo de cambio oficial/paralelo, inflación y contexto del mercado mediante Firecrawl y Exa.
-3. **Construcción del Plan Financiero:** 
+3. **Construcción del Plan Financiero:**
    * *Finora Agent:* Estructura la meta (Ejemplo: Meta: MacBook | Precio: 8,500 Bs | Plazo: 10 meses | Cuota base estimada: 850 Bs/mes).
-4. **Ejecución de Microahorros:** 
+4. **Ejecución de Microahorros:**
    * *Ejemplo 1:* Al recibir el sueldo, el agente detecta un margen y sugiere: *"Detecté que puedes separar 200 Bs sin afectar tus gastos habituales. ¿Deseas agregarlos a tu meta?"*
    * *Ejemplo 2:* Al gastar menos de lo previsto en transporte, sugiere: *"Puedes mover esos 15 Bs al fondo de tu laptop."*
-5. **Aplicación de Guardrails:** 
+5. **Aplicación de Guardrails:**
    * Si se intenta retirar dinero del fondo: *"Esa decisión retrasará tu objetivo aproximadamente dos meses. ¿Deseas continuar?"* (Información sin bloqueos arbitrarios).
-6. **Optimización con Wallbit:** 
+6. **Optimización con Wallbit:**
    * Cuando el contexto cambiario lo amerita: *"Recomiendo convertir 300 Bs a USD para proteger tu poder de compra. ¿Preparar operación?"* (El usuario confirma con un clic).
 
 ---
@@ -102,10 +102,10 @@ Sigue estos pasos para desplegar el entorno de desarrollo local:
 
 ```bash
 # 1. Clonar el repositorio oficial del proyecto
-git clone [https://github.com/](https://github.com/)[your-username]/finora-agent.git
+git clone https://github.com/Erickm29/Finora-Agent.git
 
 # 2. Navegar hacia el directorio del proyecto
-cd finora-agent
+cd Finora-Agent
 
 # 3. Instalar todas las dependencias necesarias
 npm install
@@ -118,3 +118,21 @@ cp .env.example .env
 
 # 6. Iniciar el servidor de desarrollo del agente
 npm run dev
+```
+
+---
+
+## 🧠 Contexto para IA / Cursor
+
+Este repo incluye contexto versionado para que Cursor (y el equipo) trabajen con la misma visión de producto.
+
+| Archivo | Uso |
+|---------|-----|
+| [`AGENTS.md`](AGENTS.md) | Entrada del agente: reglas duras, comandos y punteros |
+| [`.cursor/rules/finora-product.mdc`](.cursor/rules/finora-product.mdc) | Regla siempre activa (tono, pilares, confirmación humana) |
+| [`.cursor/rules/finora-integrations.mdc`](.cursor/rules/finora-integrations.mdc) | Regla bajo demanda (stack e integraciones) |
+| [`docs/context/product.md`](docs/context/product.md) | Visión, problema y features |
+| [`docs/context/architecture.md`](docs/context/architecture.md) | Stack y flujo de funcionamiento |
+| [`docs/context/domain.md`](docs/context/domain.md) | Metas, microahorros, guardrails, Wallbit |
+
+**Para compañeros:** clonar este fork, abrir la carpeta en Cursor y listo. `AGENTS.md` y `finora-product.mdc` se cargan solos; para detalle de dominio o arquitectura, usar `@docs/context/...`.
