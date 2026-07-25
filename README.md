@@ -71,7 +71,7 @@ El ecosistema de servicios que da vida a **Finora Agent** integra APIs de últim
 El ciclo de vida de una interacción típica dentro del sistema sigue estos pasos:
 
 1. **Definición de Meta:** 
-   * *Usuario:* "Quiero comprar una MacBook."
+   * *Usuario:* "Quiero comprar una MacBook." *Opcional*
 2. **Investigación Autónoma:** 
    * *Finora Agent:* Consulta precio actual, tipo de cambio oficial/paralelo, inflación y contexto del mercado mediante Firecrawl y Exa.
 3. **Construcción del Plan Financiero:** 
