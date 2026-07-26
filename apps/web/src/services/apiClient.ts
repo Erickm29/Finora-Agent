@@ -33,7 +33,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
-    credentials: 'include',
+    // Auth va en X-User-Id / Bearer; no usamos cookies de sesión cross-origin.
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
       ...(userId

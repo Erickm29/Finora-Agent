@@ -18,7 +18,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   telegramMode: (process.env.TELEGRAM_MODE ?? "local") as "local" | "webhook",
   publicApiUrl: process.env.PUBLIC_API_URL ?? "http://localhost:3001",
-  webAppUrl: process.env.WEB_APP_URL ?? "http://localhost:3000",
+  /** Dashboard URL(s) para CORS/links. Coma-separado si hay varios. */
+  webAppUrl: process.env.WEB_APP_URL ?? "http://localhost:5173",
   useMemory:
     process.env.USE_MEMORY_STORE === "true" ||
     !process.env.SUPABASE_URL ||

@@ -37,7 +37,7 @@ npm run start -w @finora/api
 | `TELEGRAM_MODE` | `webhook` |
 | `USE_MEMORY_STORE` | `false` |
 | `PUBLIC_API_URL` | `https://<tu-servicio>.onrender.com` (sin slash final) |
-| `WEB_APP_URL` | `https://<tu-app>.vercel.app` (sin slash final) |
+| `WEB_APP_URL` | `https://<tu-app>.vercel.app` (sin slash final). **Sin esto el dashboard en Vercel falla con “No se pudo conectar”** (CORS). Varios: coma-separados. |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | de Supabase |
 | `TELEGRAM_BOT_TOKEN` | BotFather |
 | `TELEGRAM_WEBHOOK_SECRET` | string random (Render puede generar uno) |
@@ -69,12 +69,14 @@ Al arrancar, la API llama `setWebhook` a `${PUBLIC_API_URL}/webhooks/telegram` s
 
 | Variable | Valor |
 |----------|--------|
-| `VITE_API_URL` | `https://<tu-api>.onrender.com/v1` |
+| `VITE_API_URL` | Preferí `/v1` (same-origin; `vercel.json` proxea a Render) **o** `https://<tu-api>.onrender.com/v1` |
 | `VITE_USE_MOCKS` | `false` |
 
-4. SPA: [`apps/web/vercel.json`](../../apps/web/vercel.json) reescribe rutas a `index.html`.
+Con `VITE_API_URL=/v1` no hace falta CORS en el browser. Con URL absoluta a Render, la API debe permitir el origen Vercel (`WEB_APP_URL` o el allow `*.vercel.app` del servidor).
 
-5. Después del primer deploy, copiá la URL `*.vercel.app` a `WEB_APP_URL` en Render y **redeploy** la API (CORS).
+4. SPA + proxy: [`vercel.json`](../../vercel.json) reescribe `/v1/*` → Render y el resto a `index.html`.
+
+5. Después del primer deploy, copiá la URL `*.vercel.app` (ej. `https://finora-agent-api.vercel.app`) a `WEB_APP_URL` en Render y **redeploy** la API (CORS). Sin esa variable el browser bloquea `fetch` al API aunque `/health` responda 200.
 
 ## 3. Checklist
 

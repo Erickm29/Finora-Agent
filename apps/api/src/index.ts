@@ -14,25 +14,55 @@ import { startDigestScheduler } from "./jobs/digest-scheduler.js";
 
 assertRuntimeEnv();
 
-function corsOrigins(): string[] {
-  const defaults = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-  ];
-  const web = env.webAppUrl?.replace(/\/+$/, "");
-  if (web && !defaults.includes(web)) {
-    return [...defaults, web];
-  }
-  return defaults;
+/** Local Vite + legacy Next defaults. */
+const LOCAL_CORS_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+function splitOrigins(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(",")
+    .map((o) => o.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
 }
+
+/**
+ * Orígenes del dashboard (Vercel) + local.
+ * `WEB_APP_URL` y `CORS_ORIGINS` aceptan varios valores separados por coma.
+ */
+function corsOrigins(): string[] {
+  const fromEnv = [
+    ...splitOrigins(env.webAppUrl),
+    ...splitOrigins(process.env.CORS_ORIGINS),
+  ];
+  return [...new Set([...LOCAL_CORS_ORIGINS, ...fromEnv])];
+}
+
+function isAllowedCorsOrigin(origin: string, allowed: string[]): boolean {
+  if (allowed.includes(origin)) return true;
+  // Previews / aliases de Vercel sin listar cada URL en Render.
+  try {
+    const host = new URL(origin).hostname;
+    return host === "vercel.app" || host.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
+const allowedCorsOrigins = corsOrigins();
 
 const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: corsOrigins(),
+    origin: (origin) => {
+      if (!origin) return allowedCorsOrigins[0] ?? "*";
+      return isAllowedCorsOrigin(origin, allowedCorsOrigins) ? origin : null;
+    },
     allowHeaders: [
       "Content-Type",
       "Authorization",
@@ -81,6 +111,9 @@ if (webhook) {
 serve({ fetch: app.fetch, port: env.port }, (info) => {
   console.info(`[finora] API listening on http://localhost:${info.port}`);
   console.info(`[finora] GET /health`);
+  console.info(
+    `[finora] CORS allowlist: ${allowedCorsOrigins.join(", ")} (+ *.vercel.app)`,
+  );
 });
 
 // Start bot without blocking HTTP server
