@@ -2,7 +2,8 @@ import { Bot, type Context, InlineKeyboard, webhookCallback } from "grammy";
 import { randomUUID } from "node:crypto";
 import { FinoraError } from "@finora/shared";
 import { env } from "../env.js";
-import { services } from "../container.js";
+import { getGoalAnalysisService, services } from "../container.js";
+import { formatAnalysisForChat } from "../analysis/format.js";
 import { runAgentTurn, type AgentReply } from "../agent/runtime.js";
 import { registerChannelNotifier } from "../agent/notifier.js";
 
@@ -92,6 +93,23 @@ function keyboardFromButtons(
   return kb;
 }
 
+/** Misma regla que /progreso: meta activa, o la primera si no hay status active. */
+async function getPrimaryGoal(userId: string) {
+  const goals = await services().goals.list(userId);
+  return goals.find((g) => g.status === "active") ?? goals[0] ?? null;
+}
+
+function defaultMicrosavingAmount(baseMonthlyBobs: number): number {
+  return Math.max(50, Math.round(baseMonthlyBobs * 0.1));
+}
+
+function actionButtons(actionId: string) {
+  return [
+    { label: "Confirmar", callbackData: `action:confirm:${actionId}` },
+    { label: "Cancelar", callbackData: `action:cancel:${actionId}` },
+  ];
+}
+
 let cachedBotUsername: string | null = null;
 
 /**
@@ -170,13 +188,21 @@ export function getBot(): Bot | null {
     await resolveUser(ctx);
     await ctx.reply(
       "Hola, soy Finora — tu mentor financiero en Bolivia (Bs).\n" +
-        "Contame tu meta o usá /meta, /progreso, /ayuda.",
+        "Contame tu meta o usá /meta, /progreso, /plan, /microahorro, /proteger, /ayuda.",
     );
   });
 
   bot.command("ayuda", async (ctx) => {
     await ctx.reply(
-      "Comandos:\n/start — comenzar\n/meta — ver o crear meta\n/progreso — avance\n/ayuda — esta ayuda\n\nTambién podés escribir en lenguaje natural.",
+      "Comandos:\n" +
+        "/start — comenzar\n" +
+        "/meta — ver tus metas\n" +
+        "/progreso — avance de la meta activa\n" +
+        "/plan — plan de inversión de la meta activa\n" +
+        "/microahorro — preparar un aporte chico (requiere confirmación)\n" +
+        "/proteger — preparar conversión a USD vía Wallbit (requiere confirmación)\n" +
+        "/ayuda — esta ayuda\n\n" +
+        "También podés escribir en lenguaje natural. Nada de dinero se mueve sin tu OK.",
     );
   });
 
@@ -196,8 +222,7 @@ export function getBot(): Bot | null {
 
   bot.command("progreso", async (ctx) => {
     const profile = await resolveUser(ctx);
-    const goals = await services().goals.list(profile.id);
-    const active = goals.find((g) => g.status === "active") ?? goals[0];
+    const active = await getPrimaryGoal(profile.id);
     if (!active) {
       await ctx.reply("Todavía no hay una meta activa.");
       return;
@@ -206,6 +231,126 @@ export function getBot(): Bot | null {
       `${active.name}: ${active.accumulatedBobs} de ${active.targetAmountBobs} Bs.\n` +
         `Cuota base sugerida: ${active.baseMonthlyBobs} Bs/mes.`,
     );
+  });
+
+  bot.command("plan", async (ctx) => {
+    try {
+      const profile = await resolveUser(ctx);
+      const active = await getPrimaryGoal(profile.id);
+      if (!active) {
+        await ctx.reply(
+          'Todavía no hay una meta. Escribí por ejemplo: "Quiero ahorrar para una laptop".',
+        );
+        return;
+      }
+
+      const analysis = await getGoalAnalysisService().get(profile.id, active.id);
+      if (!analysis || analysis.status === "pending") {
+        await ctx.reply(
+          `Estoy armando el plan de inversión para "${active.name}". ` +
+            "En unos segundos te llega solo, o pedime /plan de nuevo.",
+        );
+        return;
+      }
+      if (analysis.status === "failed" || !analysis.content) {
+        await ctx.reply(
+          `No pude completar el análisis de "${active.name}" esta vez. ` +
+            "Podés pedirme que lo regenere desde el dashboard o crear otra meta.",
+        );
+        return;
+      }
+
+      await sendReplies(ctx, [
+        { type: "text", text: formatAnalysisForChat(active, analysis) },
+      ]);
+    } catch (err) {
+      console.error("[finora] telegram /plan error", err);
+      await ctx.reply(userFacingError(err));
+    }
+  });
+
+  bot.command("microahorro", async (ctx) => {
+    try {
+      const profile = await resolveUser(ctx);
+      const active = await getPrimaryGoal(profile.id);
+      if (!active) {
+        await ctx.reply(
+          "Necesito una meta activa para sugerir un microahorro. Creá una primero.",
+        );
+        return;
+      }
+
+      const amountBobs = defaultMicrosavingAmount(active.baseMonthlyBobs);
+      const action = await services().microsavings.suggest({
+        userId: profile.id,
+        goalId: active.id,
+        amountBobs,
+        note: "Sugerido desde /microahorro",
+        channel: "telegram",
+      });
+
+      await sendReplies(ctx, [
+        {
+          type: "text",
+          text:
+            `Prepararé un microahorro de Bs ${amountBobs.toLocaleString("es-BO")} ` +
+            `para "${active.name}".\n` +
+            "No se mueve nada hasta que confirmés.",
+          buttons: actionButtons(action.id),
+        },
+      ]);
+    } catch (err) {
+      console.error("[finora] telegram /microahorro error", err);
+      await ctx.reply(userFacingError(err));
+    }
+  });
+
+  bot.command("proteger", async (ctx) => {
+    try {
+      const profile = await resolveUser(ctx);
+      const active = await getPrimaryGoal(profile.id);
+      if (!active) {
+        await ctx.reply(
+          "Necesito una meta activa para preparar la protección en dólares.",
+        );
+        return;
+      }
+
+      const remaining = Math.max(
+        0,
+        active.targetAmountBobs - active.accumulatedBobs,
+      );
+      const amountBobs = Math.max(
+        50,
+        Math.min(
+          remaining || active.baseMonthlyBobs,
+          Math.round(active.baseMonthlyBobs),
+        ),
+      );
+
+      const action = await services().pendingActions.prepareWallbitConvert({
+        userId: profile.id,
+        goalId: active.id,
+        amountBobs,
+        toCurrency: "USD",
+        channel: "telegram",
+      });
+
+      await sendReplies(ctx, [
+        {
+          type: "text",
+          text:
+            `Dejé preparada una conversión Wallbit de Bs ${amountBobs.toLocaleString("es-BO")} → USD ` +
+            `para "${active.name}".\n` +
+            "Queda lista para tu confirmación. La conversión real requiere cuenta Wallbit; " +
+            "si aún no está conectada, al confirmar solo queda registrada la preparación (stub).",
+          buttons: actionButtons(action.id),
+        },
+      ]);
+    } catch (err) {
+      console.error("[finora] telegram /proteger error", err);
+      await ctx.reply(userFacingError(err));
+    }
   });
 
   bot.on("callback_query:data", async (ctx) => {
