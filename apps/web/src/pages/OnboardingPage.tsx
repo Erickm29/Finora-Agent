@@ -4,6 +4,7 @@ import Icon from '../components/common/Icon'
 import ChoiceCard from '../components/onboarding/ChoiceCard'
 import GoalForm from '../components/onboarding/GoalForm'
 import PlanSummaryCard from '../components/onboarding/PlanSummaryCard'
+import DigestPreferencesStep from '../components/onboarding/DigestPreferencesStep'
 import InvestmentPlanCard from '../components/analysis/InvestmentPlanCard'
 import { useGoalAnalysis } from '../hooks/useGoalAnalysis'
 import FinoraLogo from '../assets/logo/FinoraLogo'
@@ -24,6 +25,7 @@ export default function OnboardingPage() {
   const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState<GoalCategory | null>(null)
   const [createdGoal, setCreatedGoal] = useState<Goal | null>(null)
+  const [showDigestStep, setShowDigestStep] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // El backend arranca el análisis al crear la meta; acá solo lo esperamos.
@@ -126,6 +128,17 @@ export default function OnboardingPage() {
                         error={analysis.error}
                         onRefresh={() => void analysis.refresh()}
                       />
+                      {!showDigestStep ? (
+                        <button
+                          type="button"
+                          className="w-full md:w-auto px-6 py-3 rounded-lg bg-primary text-on-primary font-bold"
+                          onClick={() => setShowDigestStep(true)}
+                        >
+                          Configurar briefing Wallbit
+                        </button>
+                      ) : (
+                        <DigestPreferencesStep onDone={() => navigate('/dashboard')} />
+                      )}
                     </>
                   )}
                 </div>
@@ -138,10 +151,16 @@ export default function OnboardingPage() {
           <div className="flex gap-2">
             <div className="w-2 h-2 rounded-full bg-secondary" />
             <div className="w-2 h-2 rounded-full bg-secondary" />
-            <div className="w-8 h-2 rounded-full bg-secondary" />
-            <div className="w-2 h-2 rounded-full bg-surface-container-highest" />
+            <div className="w-2 h-2 rounded-full bg-secondary" />
+            <div
+              className={`w-8 h-2 rounded-full ${showDigestStep ? 'bg-secondary' : 'bg-surface-container-highest'}`}
+            />
           </div>
-          <p className="text-label-md font-label-md text-on-surface-variant">Paso 3 de 4: Configuración de Metas</p>
+          <p className="text-label-md font-label-md text-on-surface-variant">
+            {showDigestStep
+              ? 'Paso 4 de 4: Briefing Wallbit'
+              : 'Paso 3 de 4: Configuración de Metas'}
+          </p>
           <div className="flex gap-4">
             <button
               className="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors"

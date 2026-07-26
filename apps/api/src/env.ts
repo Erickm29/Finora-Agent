@@ -58,6 +58,8 @@ export const env = {
   wallbitApiUrl: process.env.WALLBIT_API_URL || "https://api.wallbit.io",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? "",
+  /** Loop local del digest (MVP). Desactivar con DIGEST_SCHEDULER_ENABLED=false. */
+  digestSchedulerEnabled: process.env.DIGEST_SCHEDULER_ENABLED !== "false",
 };
 
 export function assertRuntimeEnv() {

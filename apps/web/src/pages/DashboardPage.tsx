@@ -131,16 +131,20 @@ export default function DashboardPage() {
     setConfirmation({
       recommendationId: id,
       data: {
-        title: 'Confirmá la acción',
+        title: recommendation.title || 'Confirmá la acción',
         subtitle: 'Finora no mueve dinero sin tu OK',
         statement: recommendation.message,
-        reason: 'Basado en el análisis de tus metas activas y tu ritmo de ahorro actual.',
+        reason:
+          recommendation.rationale ??
+          'Basado en el análisis de tus metas activas y tu ritmo de ahorro actual.',
         amount: recommendation.suggestedAmount ?? 0,
         currency: recommendation.currency ?? primaryGoal.currency,
-        // No mostramos cuenta de origen ni probabilidad de éxito aquí: el modelo
-        // `Recommendation` (ver types/recommendation.ts) todavía no expone esos campos
-        // desde el backend/mock. Pendiente de validar con Backend si se agregarán.
-        riskReductionNote: 'Este ajuste no afecta tu presupuesto esencial del mes.',
+        risks: recommendation.risks,
+        benefits: recommendation.benefits,
+        source: recommendation.source,
+        riskReductionNote:
+          recommendation.benefits?.[0] ??
+          'Este ajuste no afecta tu presupuesto esencial del mes.',
         reversibleNote: 'Podés cancelar la acción mientras siga pendiente.',
         confirmLabel: 'Confirmar y aplicar',
       },

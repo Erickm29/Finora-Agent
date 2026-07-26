@@ -266,11 +266,22 @@ export async function getBotUsername(): Promise<string | null> {
 }
 
 /** Mensaje proactivo (sin `ctx`), por ejemplo el plan de inversión ya listo. */
-async function sendProactiveMessage(chatId: string, text: string) {
+async function sendProactiveMessage(
+  chatId: string,
+  text: string,
+  options?: { buttons?: { label: string; callbackData: string }[] },
+) {
   const b = getBot();
   if (!b) return;
-  for (const chunk of splitForTelegram(text)) {
-    await b.api.sendMessage(chatId, chunk);
+  const chunks = splitForTelegram(text);
+  for (let i = 0; i < chunks.length; i++) {
+    const isLast = i === chunks.length - 1;
+    await b.api.sendMessage(chatId, chunks[i], {
+      reply_markup:
+        isLast && options?.buttons?.length
+          ? keyboardFromButtons(options.buttons)
+          : undefined,
+    });
   }
 }
 

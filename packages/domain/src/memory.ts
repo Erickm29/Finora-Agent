@@ -186,6 +186,7 @@ export class InMemoryProfilesRepo implements ProfilesRepo {
       telegramUserId: null,
       locale: "es-BO",
       currency: "BOB",
+      preferences: {},
     };
     this.profiles.set(profile.id, profile);
     return profile;
@@ -204,6 +205,7 @@ export class InMemoryProfilesRepo implements ProfilesRepo {
       telegramUserId: input.telegramUserId,
       locale: "es-BO",
       currency: "BOB",
+      preferences: {},
     };
     this.profiles.set(profile.id, profile);
     return profile;
@@ -259,6 +261,20 @@ export class InMemoryProfilesRepo implements ProfilesRepo {
     this.linkTokens.delete(token);
     if (Date.parse(entry.expiresAt) <= Date.now()) return null;
     return entry.userId;
+  }
+
+  async updatePreferences(userId: string, patch: Record<string, unknown>) {
+    const profile = await this.ensure(userId);
+    const next: Profile = {
+      ...profile,
+      preferences: { ...(profile.preferences ?? {}), ...patch },
+    };
+    this.profiles.set(userId, next);
+    return next;
+  }
+
+  async listAll() {
+    return [...this.profiles.values()];
   }
 }
 

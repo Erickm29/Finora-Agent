@@ -7,6 +7,12 @@
  */
 export type RecommendationType = 'micro_saving' | 'market_alert' | 'progress_alert' | 'wallbit_protection'
 
+export interface RecommendationSource {
+  title: string
+  url?: string
+  snippet?: string
+}
+
 export interface Recommendation {
   id: string
   goalId: string | null
@@ -18,6 +24,11 @@ export interface Recommendation {
   currency?: string
   createdAt: string // ISO date
   status: 'pending' | 'accepted' | 'dismissed'
+  /** Digest / mentor: porqué, riesgos, beneficios y fuente. */
+  rationale?: string
+  risks?: string[]
+  benefits?: string[]
+  source?: RecommendationSource
 }
 
 export type RecommendationAction = 'accept' | 'dismiss'

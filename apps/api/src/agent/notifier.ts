@@ -1,8 +1,13 @@
 import type { Channel } from "@finora/shared";
 
+export type NotifyOptions = {
+  buttons?: { label: string; callbackData: string }[];
+};
+
 export type ChannelNotifier = (
   externalChatId: string,
   text: string,
+  options?: NotifyOptions,
 ) => Promise<void>;
 
 const notifiers = new Map<Channel, ChannelNotifier>();
@@ -28,11 +33,12 @@ export async function notifyChannel(
   channel: Channel,
   externalChatId: string,
   text: string,
+  options?: NotifyOptions,
 ): Promise<void> {
   const notifier = notifiers.get(channel);
   if (!notifier) return;
   try {
-    await notifier(externalChatId, text);
+    await notifier(externalChatId, text, options);
   } catch (err) {
     console.warn(`[finora] no se pudo notificar por ${channel}:`, err);
   }

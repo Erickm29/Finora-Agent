@@ -6,6 +6,10 @@ export {
   type ConfirmResult,
 } from "./pending-actions-service.js";
 export {
+  PreferencesService,
+  preferencesOf,
+} from "./preferences.js";
+export {
   createInMemoryRepos,
   stubWallbit,
   InMemoryGoalsRepo,

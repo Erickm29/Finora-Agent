@@ -55,6 +55,8 @@ export type Profile = {
   telegramUserId: number | null;
   locale: string;
   currency: string;
+  /** Preferencias de digest / briefing (profiles.preferences jsonb). */
+  preferences: Record<string, unknown>;
 };
 
 export interface GoalsRepo {
@@ -114,6 +116,13 @@ export interface ProfilesRepo {
   }): Promise<void>;
   /** Devuelve el userId y marca el token como usado; null si no sirve. */
   consumeLinkToken(token: string): Promise<string | null>;
+  /** Merge parcial de preferences jsonb. */
+  updatePreferences(
+    userId: string,
+    patch: Record<string, unknown>,
+  ): Promise<Profile>;
+  /** Listado para jobs (digest). MVP: todos los perfiles. */
+  listAll(): Promise<Profile[]>;
 }
 
 export type ConversationSession = {
