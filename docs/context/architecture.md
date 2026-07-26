@@ -33,7 +33,7 @@ flowchart TB
 
   subgraph core [Finora Core]
     API[API Gateway Hono]
-    Agent[Agent Runtime OpenAI Tools]
+    Agent[Agent Runtime Gemini Tools]
     Domain[Domain Services]
   end
 
@@ -106,7 +106,7 @@ sequenceDiagram
 
 ### Agent Runtime
 
-- **Orquestador:** OpenAI (chat + tool calling)
+- **Orquestador:** Gemini (chat + tool calling vía API compatible OpenAI)
 - **Memoria de sesión:** historial corto en Supabase (`conversation_messages`) + resumen de meta activa
 - **Tools** (lectura/prep; nunca execute money sin confirmación previa vía `pending_actions`):
   - `research_product_price` → Firecrawl
@@ -133,7 +133,7 @@ sequenceDiagram
 
 | Capa | Tecnología | Responsabilidad |
 |------|------------|-----------------|
-| Conversación / razonamiento | OpenAI (LLM) | Cerebro del agente |
+| Conversación / razonamiento | Gemini (Google AI) | Cerebro del agente |
 | Chat principal | grammY + Telegram Bot API | Canal conversacional |
 | Dashboard | Next.js | Metas, progreso, confirmaciones |
 | Precios de productos | Firecrawl | Scraping / extracción de precios reales |
@@ -223,7 +223,7 @@ flowchart LR
 
 ## Variables de entorno (conceptual)
 
-API keys / secrets: OpenAI, Firecrawl, Exa, Wallbit, Telegram Bot, ElevenLabs, Supabase (URL + anon + service role). Zavu solo si se habilita el adapter opcional.
+API keys / secrets: Gemini, Firecrawl, Exa, Wallbit, Telegram Bot, ElevenLabs, Supabase (URL + anon + service role). Zavu solo si se habilita el adapter opcional.
 
 ## Supuestos / riesgos
 

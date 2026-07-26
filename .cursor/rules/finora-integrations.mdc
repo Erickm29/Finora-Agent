@@ -1,5 +1,5 @@
 ---
-description: Integraciones Finora — OpenAI, Firecrawl, Exa, Wallbit, Telegram/grammY, Zavu, ElevenLabs, Supabase
+description: Integraciones Finora — Gemini, Firecrawl, Exa, Wallbit, Telegram/grammY, Zavu, ElevenLabs, Supabase
 alwaysApply: false
 ---
 
@@ -9,7 +9,7 @@ Usar esta regla al tocar APIs, clientes HTTP, webhooks o persistencia.
 
 | Servicio | Uso en Finora |
 |----------|----------------|
-| OpenAI | Cerebro conversacional y razonamiento del agente |
+| Gemini (Google AI) | Cerebro conversacional y razonamiento del agente |
 | grammY + Telegram Bot API | Canal conversacional principal |
 | Next.js (web) | Dashboard: metas, progreso, confirmaciones |
 | Firecrawl | Precios reales de productos en la web |

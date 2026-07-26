@@ -1,0 +1,19 @@
+{
+  "name": "finora-agent",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build -w @finora/shared && npm run build -w @finora/db && npm run build -w @finora/domain",
+    "dev:api": "npm run build:packages && npm run dev -w @finora/api",
+    "dev": "npm run dev:api",
+    "build": "npm run build:packages && npm run build -w @finora/api",
+    "test": "npm run build:packages && npm run test -w @finora/domain",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

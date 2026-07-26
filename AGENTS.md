@@ -12,13 +12,14 @@ Detalle de producto: `docs/context/product.md`
 Arquitectura y flujo: `docs/context/architecture.md`  
 Dominio (mensajes y reglas de negocio): `docs/context/domain.md`  
 Modelo de datos: `docs/context/data-model.md`  
-API: `docs/context/api.md`
+API: `docs/context/api.md`  
+Dev local: `docs/context/local-dev.md`
 
 ## Stack
 
 | Rol | Servicio |
 |-----|----------|
-| LLM / razonamiento | OpenAI |
+| LLM / razonamiento | Gemini (Google AI) |
 | Chat principal | grammY + Telegram Bot API |
 | Dashboard | Next.js |
 | Precios de productos | Firecrawl |
@@ -26,17 +27,19 @@ API: `docs/context/api.md`
 | Patrimonio y divisas | Wallbit |
 | Notificaciones extra (opcional) | Zavu |
 | Audio / resúmenes por voz | ElevenLabs |
-| Persistencia | Supabase |
+| Persistencia | Supabase (o store en memoria local) |
 
 ## Comandos
 
 ```bash
 npm install
-cp .env.example .env   # luego completar API keys
-npm run dev
+cp .env.example .env   # USE_MEMORY_STORE=true por defecto
+npm run build:packages # shared/db/domain → dist/
+npm run dev:api        # API + bot (si hay TELEGRAM_BOT_TOKEN)
+npm test               # domain unit tests
 ```
 
-Requisitos: Node.js ≥ 18.
+Requisitos: Node.js ≥ 18. Workspaces de este track: `apps/api`, `packages/*` (`apps/web` es stub / owner externo).
 
 ## Reglas duras
 

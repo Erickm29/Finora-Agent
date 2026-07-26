@@ -1,143 +1,188 @@
-# Finora-Agent
-# Finora Agent 🤖💰
-*El agente financiero que convierte tus metas en un plan automático.*
+# Finora Agent
 
-<div align="center">
+Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de emergencia) en un plan operativo con microahorros, guardrails informativos y acciones preparadas (p. ej. Wallbit), **siempre con confirmación humana**.
 
-[![Status]()](#)
-[![License: MIT]()
-[![Powered by OpenAI]()
-[![Telegram Bot]()
-
-</div>
+- **Chat principal:** Telegram (grammY)
+- **Dashboard:** Next.js (metas, progreso, confirmar acciones) — ownership frontend externo; stub en `apps/web`
+- **Mercado por defecto:** Bolivia — montos en **pesos bolivianos (Bs / BOB)**
 
 ---
 
-## 📌 Visión General del Proyecto
+## Pilares
 
-Las personas suelen fijarse metas claras y aspiracionales, tales como:
-* Comprar una laptop de alta gama para trabajar o estudiar.
-* Ahorrar para la inicial de una casa propia.
-* Planificar un viaje internacional soñado.
-* Construir un sólido fondo de emergencia ante imprevistos.
-
-Sin embargo, en el día a día suele ocurrir el obstáculo clásico: *"Este mes iba a ahorrar... pero terminé gastando el dinero."*
-
-El verdadero problema financiero de la mayoría de las personas no radica en saber cómo invertir en instrumentos complejos, sino en la **falta crónica de disciplina y la ausencia de un plan operativo, ultra-personalizado y adaptado a su realidad económica**.
-
-**Finora Agent** es un agente financiero autónomo e inteligente diseñado para acompañar de la mano al usuario desde el instante exacto en que define un objetivo hasta que lo materializa, transformando por completo su comportamiento financiero a través de microahorros invisibles, guardrails conductuales y automatizaciones conectadas a servicios financieros reales.
+1. Metas centradas en deseos reales del usuario  
+2. Microahorros inteligentes e indoloros  
+3. Guardrails informativos (impacto temporal), sin quitar control  
+4. Acciones preparadas que requieren confirmación humana  
 
 ---
 
-## 💡 ¿Por qué Finora Agent? (El Gran Diferencial)
+## Estado del MVP (backend / agente)
 
-A diferencia de las aplicaciones bancarias tradicionales o las calculadoras de ahorro estáticas que se limitan a mostrar gráficos aburridos, **Finora Agent actúa como un mentor financiero personal y activo**.
-
-El "wow factor" del proyecto descansa sobre cuatro pilares fundamentales:
-1. **Metas centradas en deseos reales**, no en la venta de productos financieros ajenos al usuario.
-2. **Microahorros inteligentes e indoloros**, que distribuyen el esfuerzo financiero en pequeñas acciones cotidianas para que ahorrar deje de sentirse como un sacrificio.
-3. **Guardrails financieros y conductuales**, que previenen compras impulsivas informando el impacto temporal exacto de cada decisión, sin quitarle jamás el control al usuario.
-4. **Acciones guiadas y preparadas (como con Wallbit)**, donde el agente automatiza la parte tediosa (como proteger ahorros convirtiéndolos a divisas estables) pero siempre requiere la confirmación humana final.
-
----
-
-## ✨ Características Principales
-
-* 🎯 **Definición y Estructuración de Metas:** El agente comprende el objetivo del usuario, investiga de manera autónoma el precio actual en el mercado, evalúa el tipo de cambio, el contexto económico y la inflación vigente para diseñar un plan a medida.
-* ⚡ **Microahorros Automatizados:** En lugar de exigir cuotas mensuales elevadas y difíciles de cumplir, propone sistemas sutiles como separar montos diarios, guardar el vuelto de compras cotidianas o apartar un porcentaje menor tras recibir ingresos.
-* 🛡️ **Guardrails Predictivos de Comportamiento:** Si el usuario intenta retirar fondos reservados de su meta, el agente calcula y comunica de forma asertiva el retraso exacto que esto provocará en su cronograma, fomentando la reflexión consciente.
-* 🔄 **Monitoreo Continuo de Mercado:** Revisa periódicamente precios, noticias financieras e indicadores macroeconómicos para notificar al usuario si el producto deseado disminuyó de precio o si existe una oportunidad de optimización.
-* 🌐 **Protección Patrimonial Integrada:** Detecta cuándo es conveniente blindar el poder adquisitivo de los ahorros y prepara operaciones de conversión (por ejemplo, a USD a través de Wallbit) listas para que el usuario solo tenga que dar un toque de aprobación.
-* 🔊 **Resúmenes por Voz y Alertas Dinámicas:** Envía notificaciones fluidas, recordatorios y reportes de progreso adaptados para canalizarse de forma óptima a través de plataformas de mensajería como Telegram y síntesis de voz mediante ElevenLabs.
+| Área | Estado |
+|------|--------|
+| Monorepo npm (`apps/api`, `packages/*`) | Listo |
+| Domain (goals, microahorros, guardrails, pending_actions) + tests | Listo |
+| API REST Hono (`/v1/...`, `/health`) | Listo |
+| Bot Telegram (polling local + comandos + callbacks) | Listo |
+| Agente Gemini (tools + fallback 429 → mentor local) | Listo |
+| Supabase (schema RLS + repos SQL) | Listo |
+| Historial de conversación en Supabase | Listo |
+| Firecrawl (precios) / Exa (macro BO) / ElevenLabs (voz) | Listo |
+| Wallbit execute | Stub (sin cuenta/fondos aún) |
+| Auth JWT Supabase para web | Pendiente (`X-User-Id` en local) |
+| Dashboard producción | Owner frontend |
+| Jobs proactivos (precio / recordatorios) | Fase 2 |
 
 ---
 
-## 🛠️ Arquitectura y Stack Tecnológico
+## Stack
 
-El ecosistema de servicios que da vida a **Finora Agent** integra APIs de última generación especializadas en inteligencia artificial, extracción de datos y gestión financiera:
-
-* **Cerebro Conversacional y Razonamiento:** `OpenAI (LLM)`
-* **Extracción de Datos y Precios de Mercado:** `Firecrawl` (Para rastrear precios reales de productos en la web)
-* **Contexto Económico y Análisis:** `Exa` (Para la búsqueda avanzada de variables macroeconómicas)
-* **Gestión Patrimonial y Divisas:** `Wallbit` (Para consultar patrimonio y preparar operaciones de protección de ahorro)
-* **Chat principal:** `grammY` + Telegram Bot API
-* **Dashboard web:** `Next.js` (metas, progreso, confirmaciones Wallbit)
-* **Notificaciones extra (opcional):** `Zavu`
-* **Generación de Audio y Resúmenes:** `ElevenLabs` (Para sintetizar resúmenes financieros por voz)
-* **Base de Datos y Persistencia:** `Supabase` (Para almacenar de manera segura metas de usuarios, progreso e historial de transacciones)
-* **Mercado por defecto:** Bolivia — montos en pesos bolivianos (Bs / BOB)
-
----
-
-## 🚀 Flujo Completo de Funcionamiento
-
-El ciclo de vida de una interacción típica dentro del sistema sigue estos pasos:
-
-1. **Definición de Meta:**
-   * *Usuario:* "Quiero comprar una MacBook." *Opcional*
-2. **Investigación Autónoma:**
-   * *Finora Agent:* Consulta precio actual, tipo de cambio oficial/paralelo, inflación y contexto del mercado mediante Firecrawl y Exa.
-3. **Construcción del Plan Financiero:**
-   * *Finora Agent:* Estructura la meta (Ejemplo: Meta: MacBook | Precio: 8,500 Bs | Plazo: 10 meses | Cuota base estimada: 850 Bs/mes).
-4. **Ejecución de Microahorros:**
-   * *Ejemplo 1:* Al recibir el sueldo, el agente detecta un margen y sugiere: *"Detecté que puedes separar 200 Bs sin afectar tus gastos habituales. ¿Deseas agregarlos a tu meta?"*
-   * *Ejemplo 2:* Al gastar menos de lo previsto en transporte, sugiere: *"Puedes mover esos 15 Bs al fondo de tu laptop."*
-5. **Aplicación de Guardrails:**
-   * Si se intenta retirar dinero del fondo: *"Esa decisión retrasará tu objetivo aproximadamente dos meses. ¿Deseas continuar?"* (Información sin bloqueos arbitrarios).
-6. **Optimización con Wallbit:**
-   * Cuando el contexto cambiario lo amerita: *"Recomiendo convertir 300 Bs a USD para proteger tu poder de compra. ¿Preparar operación?"* (El usuario confirma con un clic).
+| Rol | Tecnología |
+|-----|------------|
+| LLM | Gemini (Google AI, API compatible OpenAI) |
+| Chat | grammY + Telegram Bot API |
+| API | Hono (`apps/api`) |
+| Domain | `@finora/domain` (TypeScript) |
+| Persistencia | Supabase (Postgres + RLS) o memoria local |
+| Precios | Firecrawl |
+| Macro / noticias | Exa |
+| Voz | ElevenLabs |
+| Divisas | Wallbit (prepare → confirm; execute stub hoy) |
+| Dashboard | Next.js (stub / otro owner) |
 
 ---
 
-## 📋 Prerrequisitos del Sistema
+## Monorepo
 
-Asegúrate de contar con los siguientes elementos en tu entorno de desarrollo antes de ejecutar el proyecto:
-* **Node.js** (versión $\ge 18.x$ recomendada)
-* **npm**, **pnpm** o **yarn** como gestor de paquetes
-* **Git** para el control de versiones
-* Credenciales de acceso (API Keys) para OpenAI, Firecrawl, Exa, Wallbit, Telegram Bot, ElevenLabs y Supabase. Zavu solo si se habilita el canal opcional.
-
----
-
-## ⚙️ Guía de Instalación y Puesta en Marcha
-
-Sigue estos pasos para desplegar el entorno de desarrollo local:
-
-```bash
-# 1. Clonar el repositorio oficial del proyecto
-git clone https://github.com/Erickm29/Finora-Agent.git
-
-# 2. Navegar hacia el directorio del proyecto
-cd Finora-Agent
-
-# 3. Instalar todas las dependencias necesarias
-npm install
-
-# 4. Configurar las variables de entorno utilizando la plantilla base
-cp .env.example .env
-
-# 5. Rellenar las claves y configuraciones correspondientes en el archivo .env creado
-# EDITOR .env
-
-# 6. Iniciar el servidor de desarrollo del agente
-npm run dev
+```
+Finora-Agent/
+├── apps/api          # Hono + grammY + agent runtime + adapters
+├── apps/web          # Stub dashboard (no está en workspaces de este track)
+├── packages/shared   # Zod, errores, helpers
+├── packages/domain   # Reglas de negocio + tests
+├── packages/db       # Cliente / tipos Supabase
+├── supabase/migrations/
+└── docs/context/     # Spec producto, arquitectura, API, dominio
 ```
 
+**Ownership**
+
+| Área | Owner |
+|------|--------|
+| Backend + agente + bot + domain + Supabase | Este track |
+| Frontend / dashboard | Compañero (contrato: [`docs/context/api.md`](docs/context/api.md)) |
+
 ---
 
-## 🧠 Contexto para IA / Cursor
+## Requisitos
 
-Este repo incluye contexto versionado para que Cursor (y el equipo) trabajen con la misma visión de producto.
+- Node.js ≥ 18  
+- npm  
+- Cuentas / keys según lo que quieras probar (ver `.env.example`)
+
+---
+
+## Arranque local
+
+```bash
+npm install
+cp .env.example .env
+# Completar al menos: GEMINI_API_KEY, TELEGRAM_BOT_TOKEN
+# Para persistir: SUPABASE_* y USE_MEMORY_STORE=false
+
+npm run build:packages
+npm run dev:api          # http://localhost:3001/health
+npm test                 # tests de domain
+```
+
+Detalle: [`docs/context/local-dev.md`](docs/context/local-dev.md).
+
+### Variables de entorno relevantes
+
+| Variable | Uso |
+|----------|-----|
+| `USE_MEMORY_STORE` | `true` = memoria; `false` = Supabase |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Persistencia (service role solo en API) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_MODE=local` | Bot con long polling |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | Cerebro del agente (`gemini-flash-latest` por defecto) |
+| `FIRECRAWL_API_KEY` | Precios reales |
+| `EXA_API_KEY` | Contexto macro Bolivia |
+| `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | Resumen por voz |
+| `WALLBIT_API_KEY` / `WALLBIT_API_URL` | Vacío = stub seguro tras confirm |
+
+Schema: aplicar / ya aplicado `supabase/migrations/20260725120000_init.sql` (Telegram-first: profiles sin exigir `auth.users`).
+
+---
+
+## API (resumen)
+
+Base: `http://localhost:3001`
+
+- `GET /health` — estado (memory/supabase, telegram, gemini)  
+- `GET/POST/PATCH /v1/goals` …  
+- `GET /v1/actions/pending` + `POST /v1/actions/:id/confirm|cancel`  
+- `POST /v1/agent/turn`  
+- `POST /v1/account/telegram/link-token`  
+
+**Auth local hoy:** header `X-User-Id: <uuid>` (o `Authorization: Bearer <uuid>`).  
+Contrato completo: [`docs/context/api.md`](docs/context/api.md).
+
+---
+
+## Telegram
+
+Con `TELEGRAM_BOT_TOKEN` y `TELEGRAM_MODE=local`:
+
+1. `npm run dev:api`  
+2. Abrí el bot en Telegram  
+3. `/start` → meta en lenguaje natural → microahorro → botones Confirmar / Cancelar  
+
+Si Gemini responde 429 (cupo free), el bot **reintenta** y cae a mentor local sin cortar el flujo.
+
+---
+
+## Flujo de producto
+
+1. Usuario define meta (Telegram)  
+2. Investigación (Firecrawl / Exa; sin inventar precios si faltan datos)  
+3. Plan en Bs (plazo + cuota base)  
+4. Microahorros preparados → `pending_actions` → confirmación humana  
+5. Guardrails: informan retraso en meses, no bloquean  
+6. Wallbit: se prepara; execute solo tras confirm (stub hasta tener cuenta)  
+7. Historial de chat persistido en Supabase  
+
+---
+
+## Reglas duras
+
+1. Nunca ejecutar dinero real sin confirmación explícita  
+2. Informar, no bloquear de forma paternalista  
+3. Mentor accionable, no calculadora genérica  
+4. Bs = pesos bolivianos (BOB), no bolívares  
+5. Secretos solo en `.env` (nunca commitear `.env`)  
+
+---
+
+## Contexto para IA / Cursor
 
 | Archivo | Uso |
 |---------|-----|
-| [`AGENTS.md`](AGENTS.md) | Entrada del agente: reglas duras, comandos y punteros |
-| [`.cursor/rules/finora-product.mdc`](.cursor/rules/finora-product.mdc) | Regla siempre activa (tono, pilares, confirmación humana) |
-| [`.cursor/rules/finora-integrations.mdc`](.cursor/rules/finora-integrations.mdc) | Regla bajo demanda (stack e integraciones) |
-| [`docs/context/product.md`](docs/context/product.md) | Visión, problema y features |
-| [`docs/context/architecture.md`](docs/context/architecture.md) | C4, monorepo, agente, Telegram, web |
-| [`docs/context/domain.md`](docs/context/domain.md) | Metas, microahorros, guardrails, canales, Wallbit |
-| [`docs/context/data-model.md`](docs/context/data-model.md) | Tablas Supabase, RLS, pending_actions |
-| [`docs/context/api.md`](docs/context/api.md) | Contratos REST y webhooks |
+| [`AGENTS.md`](AGENTS.md) | Entrada del agente: reglas y comandos |
+| [`.cursor/rules/finora-product.mdc`](.cursor/rules/finora-product.mdc) | Producto (siempre activo) |
+| [`.cursor/rules/finora-integrations.mdc`](.cursor/rules/finora-integrations.mdc) | Integraciones |
+| [`docs/context/product.md`](docs/context/product.md) | Visión y features |
+| [`docs/context/architecture.md`](docs/context/architecture.md) | C4, monorepo, canales |
+| [`docs/context/domain.md`](docs/context/domain.md) | Metas, microahorros, guardrails |
+| [`docs/context/data-model.md`](docs/context/data-model.md) | Tablas y RLS |
+| [`docs/context/api.md`](docs/context/api.md) | Contratos REST |
+| [`docs/context/local-dev.md`](docs/context/local-dev.md) | Dev local |
 
-**Para compañeros:** clonar este fork, abrir la carpeta en Cursor y listo. `AGENTS.md` y `finora-product.mdc` se cargan solos; para detalle de dominio o arquitectura, usar `@docs/context/...`.
+---
+
+## Próximos pasos sugeridos
+
+1. Auth JWT Supabase en la API (para el dashboard)  
+2. Commit / alinear `main` remoto  
+3. Wallbit real cuando haya cuenta  
+4. Jobs proactivos (fase 2)  

@@ -1,0 +1,314 @@
+import { randomUUID } from "node:crypto";
+import type {
+  Channel,
+  CreateGoalInput,
+  PatchGoalInput,
+  PendingActionStatus,
+} from "@finora/shared";
+import type {
+  ConversationMessage,
+  ConversationSession,
+  ConversationsRepo,
+  DomainRepos,
+  Goal,
+  GoalTransaction,
+  GoalsRepo,
+  PendingAction,
+  PendingActionsRepo,
+  Profile,
+  ProfilesRepo,
+  WallbitClient,
+} from "./types.js";
+
+export class InMemoryGoalsRepo implements GoalsRepo {
+  goals = new Map<string, Goal>();
+  transactions: GoalTransaction[] = [];
+
+  async listByUser(userId: string) {
+    return [...this.goals.values()].filter((g) => g.userId === userId);
+  }
+
+  async getById(userId: string, goalId: string) {
+    const g = this.goals.get(goalId);
+    return g && g.userId === userId ? g : null;
+  }
+
+  async create(userId: string, input: CreateGoalInput) {
+    const now = new Date().toISOString();
+    const goal: Goal = {
+      id: randomUUID(),
+      userId,
+      name: input.name,
+      targetAmountBobs: input.target_amount_bobs,
+      targetMonths: input.target_months,
+      baseMonthlyBobs: input.base_monthly_bobs,
+      accumulatedBobs: 0,
+      status: "active",
+      productUrl: input.product_url ?? null,
+      metadata: input.metadata ?? {},
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.goals.set(goal.id, goal);
+    return goal;
+  }
+
+  async update(
+    userId: string,
+    goalId: string,
+    patch: PatchGoalInput & { accumulatedBobs?: number },
+  ) {
+    const goal = await this.getById(userId, goalId);
+    if (!goal) throw new Error("not found");
+    const next: Goal = {
+      ...goal,
+      name: patch.name ?? goal.name,
+      status: patch.status ?? goal.status,
+      targetMonths: patch.target_months ?? goal.targetMonths,
+      baseMonthlyBobs: patch.base_monthly_bobs ?? goal.baseMonthlyBobs,
+      metadata: patch.metadata ?? goal.metadata,
+      accumulatedBobs: patch.accumulatedBobs ?? goal.accumulatedBobs,
+      updatedAt: new Date().toISOString(),
+    };
+    this.goals.set(goalId, next);
+    return next;
+  }
+
+  async listTransactions(userId: string, goalId: string) {
+    return this.transactions
+      .filter((t) => t.userId === userId && t.goalId === goalId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async addTransaction(
+    tx: Omit<GoalTransaction, "id" | "createdAt"> & { id?: string },
+  ) {
+    const row: GoalTransaction = {
+      id: tx.id ?? randomUUID(),
+      goalId: tx.goalId,
+      userId: tx.userId,
+      type: tx.type,
+      amountBobs: tx.amountBobs,
+      source: tx.source,
+      note: tx.note,
+      createdAt: new Date().toISOString(),
+    };
+    this.transactions.push(row);
+    return row;
+  }
+}
+
+export class InMemoryPendingActionsRepo implements PendingActionsRepo {
+  actions = new Map<string, PendingAction>();
+
+  async listPending(userId: string) {
+    const now = Date.now();
+    return [...this.actions.values()].filter(
+      (a) =>
+        a.userId === userId &&
+        a.status === "pending" &&
+        new Date(a.expiresAt).getTime() >= now,
+    );
+  }
+
+  async getById(userId: string, id: string) {
+    const a = this.actions.get(id);
+    return a && a.userId === userId ? a : null;
+  }
+
+  async create(
+    action: Omit<PendingAction, "id" | "createdAt" | "confirmedAt" | "status"> & {
+      status?: PendingActionStatus;
+    },
+  ) {
+    const row: PendingAction = {
+      id: randomUUID(),
+      userId: action.userId,
+      goalId: action.goalId,
+      kind: action.kind,
+      payload: action.payload,
+      status: action.status ?? "pending",
+      channelCreated: action.channelCreated,
+      confirmToken: action.confirmToken,
+      expiresAt: action.expiresAt,
+      confirmedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    this.actions.set(row.id, row);
+    return row;
+  }
+
+  async updateStatus(
+    userId: string,
+    id: string,
+    status: PendingActionStatus,
+    confirmedAt?: string | null,
+  ) {
+    const action = await this.getById(userId, id);
+    if (!action) throw new Error("not found");
+    const next = {
+      ...action,
+      status,
+      confirmedAt: confirmedAt === undefined ? action.confirmedAt : confirmedAt,
+    };
+    this.actions.set(id, next);
+    return next;
+  }
+}
+
+export class InMemoryProfilesRepo implements ProfilesRepo {
+  profiles = new Map<string, Profile>();
+
+  async getById(id: string) {
+    return this.profiles.get(id) ?? null;
+  }
+
+  async getByTelegramId(telegramUserId: number) {
+    return (
+      [...this.profiles.values()].find((p) => p.telegramUserId === telegramUserId) ??
+      null
+    );
+  }
+
+  async ensure(userId: string) {
+    const existing = await this.getById(userId);
+    if (existing) return existing;
+    const profile: Profile = {
+      id: userId,
+      displayName: null,
+      telegramUserId: null,
+      locale: "es-BO",
+      currency: "BOB",
+    };
+    this.profiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async upsertTelegramProfile(input: {
+    id: string;
+    telegramUserId: number;
+    displayName?: string | null;
+  }) {
+    const existing = await this.getByTelegramId(input.telegramUserId);
+    if (existing) return existing;
+    const profile: Profile = {
+      id: input.id,
+      displayName: input.displayName ?? null,
+      telegramUserId: input.telegramUserId,
+      locale: "es-BO",
+      currency: "BOB",
+    };
+    this.profiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async linkTelegram(userId: string, telegramUserId: number) {
+    const profile = this.profiles.get(userId);
+    if (!profile) throw new Error("profile not found");
+    const next = { ...profile, telegramUserId };
+    this.profiles.set(userId, next);
+    return next;
+  }
+}
+
+export class InMemoryConversationsRepo implements ConversationsRepo {
+  sessions = new Map<string, ConversationSession>();
+  messages: ConversationMessage[] = [];
+
+  private sessionKey(userId: string, channel: Channel, externalChatId: string) {
+    return `${userId}:${channel}:${externalChatId}`;
+  }
+
+  async getOrCreateSession(input: {
+    userId: string;
+    channel: Channel;
+    externalChatId: string;
+  }) {
+    const key = this.sessionKey(
+      input.userId,
+      input.channel,
+      input.externalChatId,
+    );
+    const existing = [...this.sessions.values()].find(
+      (s) =>
+        s.userId === input.userId &&
+        s.channel === input.channel &&
+        s.externalChatId === input.externalChatId,
+    );
+    if (existing) return existing;
+    const now = new Date().toISOString();
+    const session: ConversationSession = {
+      id: randomUUID(),
+      userId: input.userId,
+      channel: input.channel,
+      externalChatId: input.externalChatId,
+      activeGoalId: null,
+      updatedAt: now,
+    };
+    this.sessions.set(key, session);
+    return session;
+  }
+
+  async listRecentMessages(sessionId: string, limit = 20) {
+    return this.messages
+      .filter((m) => m.sessionId === sessionId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(-limit);
+  }
+
+  async appendMessages(
+    sessionId: string,
+    rows: {
+      role: ConversationMessage["role"];
+      content: string;
+      toolName?: string | null;
+    }[],
+  ) {
+    const now = new Date().toISOString();
+    const created = rows.map((r) => {
+      const msg: ConversationMessage = {
+        id: randomUUID(),
+        sessionId,
+        role: r.role,
+        content: r.content,
+        toolName: r.toolName ?? null,
+        createdAt: now,
+      };
+      this.messages.push(msg);
+      return msg;
+    });
+    await this.touchSession(sessionId);
+    return created;
+  }
+
+  async touchSession(sessionId: string, activeGoalId?: string | null) {
+    for (const [key, session] of this.sessions) {
+      if (session.id !== sessionId) continue;
+      this.sessions.set(key, {
+        ...session,
+        activeGoalId:
+          activeGoalId === undefined ? session.activeGoalId : activeGoalId,
+        updatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+  }
+}
+
+export const stubWallbit: WallbitClient = {
+  async executeConvert(payload) {
+    return { ok: true, result: { stub: true, payload } };
+  },
+};
+
+export function createInMemoryRepos(
+  wallbit: WallbitClient = stubWallbit,
+): DomainRepos {
+  return {
+    goals: new InMemoryGoalsRepo(),
+    pendingActions: new InMemoryPendingActionsRepo(),
+    profiles: new InMemoryProfilesRepo(),
+    conversations: new InMemoryConversationsRepo(),
+    wallbit,
+  };
+}
