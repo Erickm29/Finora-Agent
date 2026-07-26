@@ -29,7 +29,18 @@ export const env = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
   telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
-  geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
+  geminiModel: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  geminiBaseUrl:
+    process.env.GEMINI_BASE_URL ??
+    "https://generativelanguage.googleapis.com/v1beta/openai/",
+  groqApiKey: process.env.GROQ_API_KEY ?? "",
+  groqBaseUrl:
+    process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1",
+  openRouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
+  openRouterBaseUrl:
+    process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
+  defaultProvider: process.env.DEFAULT_PROVIDER ?? "",
+  aiProvidersConfig: process.env.AI_PROVIDERS_CONFIG ?? "",
   firecrawlApiKey: process.env.FIRECRAWL_API_KEY ?? "",
   exaApiKey: process.env.EXA_API_KEY ?? "",
   wallbitApiKey: process.env.WALLBIT_API_KEY ?? "",

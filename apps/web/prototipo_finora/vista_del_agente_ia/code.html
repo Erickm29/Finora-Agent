@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finora AI Agent - Wealth Copilot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#006e71",
+                    "inverse-primary": "#8cd2dd",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#7cd9d0",
+                    "inverse-on-surface": "#eff1f1",
+                    "primary-container": "#015d67",
+                    "surface-bright": "#f8fafa",
+                    "on-secondary-fixed-variant": "#004f52",
+                    "tertiary-container": "#005f59",
+                    "tertiary-fixed": "#96f3ea",
+                    "on-surface": "#191c1d",
+                    "primary": "#00444b",
+                    "tertiary": "#004541",
+                    "surface-dim": "#d8dadb",
+                    "surface": "#f8fafa",
+                    "secondary": "#00696c",
+                    "on-primary-fixed-variant": "#004f57",
+                    "on-secondary-fixed": "#002021",
+                    "primary-fixed-dim": "#8cd2dd",
+                    "surface-container-low": "#f2f4f4",
+                    "secondary-container": "#73f2f7",
+                    "on-surface-variant": "#3f484a",
+                    "surface-container-high": "#e6e8e9",
+                    "on-background": "#191c1d",
+                    "surface-variant": "#e0e3e3",
+                    "primary-fixed": "#a8eefa",
+                    "secondary-fixed": "#76f5fa",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#56d9de",
+                    "on-primary-container": "#8ed3df",
+                    "tertiary-fixed-dim": "#79d6cd",
+                    "surface-tint": "#186872",
+                    "on-tertiary-fixed-variant": "#00504b",
+                    "background": "#f8fafa",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#00201e",
+                    "on-error-container": "#93000a",
+                    "outline": "#6f797a",
+                    "inverse-surface": "#2d3132",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bec8ca",
+                    "on-primary-fixed": "#001f24",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceeef",
+                    "surface-container-highest": "#e0e3e3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "card": "24px"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "stack-md": "24px",
+                    "card-padding": "24px",
+                    "stack-lg": "48px",
+                    "base": "8px",
+                    "container-margin-desktop": "40px",
+                    "container-margin-mobile": "20px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Montserrat"],
+                    "headline-lg": ["Montserrat"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg": ["Montserrat"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Montserrat"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f8fafa;
+            color: #191c1d;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 234, 235, 0.5);
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04);
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(135, 228, 219, 0.3);
+        }
+        .agent-bubble {
+            background: linear-gradient(135deg, #87E4DB 0%, #B2F0E8 100%);
+            border-bottom-left-radius: 4px;
+        }
+        .user-bubble {
+            background-color: #00ACB1;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bec8ca;
+            border-radius: 10px;
+        }
+        .dot-pattern {
+            background-image: radial-gradient(#00696c 0.5px, transparent 0.5px);
+            background-size: 12px 12px;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+<!-- SideNavBar from JSON -->
+<aside class="h-full w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline-variant bg-primary shadow-sm flex flex-col py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined font-bold">account_balance_wallet</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-extrabold text-secondary-fixed">Finora Agent</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-primary/60 font-bold">Intelligent Wealth</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined">ads_click</span>
+<span class="text-label-md font-label-md">Goals</span>
+</a>
+<!-- Active State Logic for Agent Chat -->
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 mx-2 scale-95 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="text-label-md font-label-md">Agent Chat</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-on-primary/10">
+<div class="px-4 mb-4">
+<div class="bg-primary-container rounded-xl p-4 text-center">
+<p class="text-label-sm text-on-primary-container mb-2">Maximize your potential</p>
+<button class="w-full bg-secondary-fixed text-on-secondary-fixed font-bold py-2 rounded-lg text-label-md transition-transform active:scale-95">Upgrade to Pro</button>
+</div>
+</div>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-label-md font-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-label-md font-label-md">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface/80 backdrop-blur-md border-b border-surface-variant/30 shadow-sm flex justify-between items-center h-16 px-8 ml-64">
+<div class="flex items-center gap-4">
+<h2 class="text-headline-sm font-headline-md font-bold text-primary">Chat Co-pilot</h2>
+<div class="hidden md:flex gap-6 ml-8">
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors text-label-md font-label-md" href="#">Portfolio</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors text-label-md font-label-md" href="#">Insights</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors text-label-md font-label-md" href="#">History</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<input class="bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-label-md w-64 focus:ring-2 focus:ring-secondary transition-all" placeholder="Buscar transacción..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-2 text-on-surface-variant">search</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="h-8 w-px bg-surface-variant"></div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-md transition-all active:opacity-70">New Goal</button>
+<img class="w-10 h-10 rounded-full border-2 border-secondary-fixed object-cover" data-alt="A professional headshot of a smiling young woman with glasses, minimalist style, corporate photography, soft studio lighting, high key background, wearing a neutral blazer, representative of a fintech user profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3gilOUFyBuRKQ0EyibpPOizxCnse2LZQtKQ3orwYSskU0rNwX897ZadhFbXi563s9F1w1Pgk_9A2tp7dEx2iATo1jm-XvYBPTat7zuHVTACUY8tPZoN4GIQCllgiQYO__jHaPwvzYkW0YO80xsE16C4frV2-cCMmKeZ2yWy-zyP2tiMJfq6X-yw9HOy6s_rqV5yS0V1bVD5y0WD_dlq18tYSgkIfp7Wa4gegcLZg4rynJsC5GjMFyL_RnD6qfhoT_msWyiJedqZWs"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 mt-16 h-[calc(100vh-4rem)] flex overflow-hidden">
+<!-- Chat Canvas -->
+<section class="flex-1 flex flex-col relative bg-surface-container-lowest">
+<!-- Atmospheric Gradient -->
+<div class="absolute inset-0 pointer-events-none opacity-20 dot-pattern"></div>
+<!-- Chat History -->
+<div class="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar relative z-10" id="chat-container">
+<!-- Date Divider -->
+<div class="flex justify-center">
+<span class="bg-surface-container text-on-surface-variant text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Hoy</span>
+</div>
+<!-- Agent Message (Welcome) -->
+<div class="flex gap-4 max-w-[80%]">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex-shrink-0 flex items-center justify-center ai-glow border border-white/50">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="agent-bubble p-5 rounded-[24px] shadow-sm">
+<p class="font-body-md text-primary leading-relaxed">
+                                ¡Hola! Soy Finora, tu co-piloto financiero. Estoy analizando tus movimientos de este mes comparados con tus objetivos de "Ahorro para Vivienda". ¿En qué puedo ayudarte hoy?
+                            </p>
+</div>
+<span class="text-[10px] text-on-surface-variant/60 ml-2 font-bold">10:02 AM</span>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-4 max-w-[80%] flex-row-reverse self-end">
+<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-white">
+<img class="w-full h-full object-cover" data-alt="A closeup profile photo of a modern fintech user, smiling warmly, studio lighting, clean background, high quality portraiture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4hSlhkWsgUYuT4DQKDrz1espU-JXrLEiBzDYNYkyEBYpOSFH2CL2jKIT7UDrG-YdiIQj332KvRSgAQMLSdRY5Eve9j0NWTAEw0ZCVLCkWkNqySfut7WSitQ00LX6ucIKo8hbh9I4xL_qnsat3XgnP_H34446kYgZAri4PH4PIPHKtamX-y9DyWPXgzwRP1oXe-afnEO8exIBm1GmViPIBej7ZstDNlmE5-T6l515fj-FtyJC1hnIcls4_vJ-zQFsqKj2uYxd5u87G"/>
+</div>
+<div class="flex flex-col gap-2 items-end">
+<div class="user-bubble p-5 rounded-[24px] shadow-sm">
+<p class="font-body-md leading-relaxed">
+                                ¿Estoy avanzando bien?
+                            </p>
+</div>
+<span class="text-[10px] text-on-surface-variant/60 mr-2 font-bold">10:05 AM</span>
+</div>
+</div>
+<!-- Agent Response with Insight Card -->
+<div class="flex gap-4 max-w-[85%]">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex-shrink-0 flex items-center justify-center ai-glow border border-white/50">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="agent-bubble p-5 rounded-[24px] shadow-sm">
+<p class="font-body-md text-primary leading-relaxed">
+                                Sí, actualmente estás <span class="font-bold underline decoration-2 decoration-white">8% por encima del plan</span>. Tus gastos en "Entretenimiento" han bajado este mes, lo que nos ha permitido acelerar el fondo de emergencia.
+                            </p>
+</div>
+<!-- Embedded Data Insight (Inspired by the provided image) -->
+<div class="bg-white rounded-card p-6 border border-outline-variant/30 shadow-md flex gap-6 max-w-lg">
+<div class="flex-1">
+<p class="text-label-sm text-on-surface-variant font-bold mb-2 uppercase tracking-wide">Progreso del Mes</p>
+<div class="flex items-end gap-2 mb-4">
+<h3 class="text-display-lg text-primary leading-none">8%</h3>
+<span class="material-symbols-outlined text-secondary font-bold mb-2">trending_up</span>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[68%] rounded-full relative">
+<div class="absolute right-0 top-0 h-full w-4 bg-white/30 animate-pulse"></div>
+</div>
+</div>
+<p class="text-[11px] text-on-surface-variant mt-2">Avg score: 18,324$ vs Goal: 16,500$</p>
+</div>
+<div class="w-24 h-24 flex items-center justify-center relative">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="80" stroke-width="8"></circle>
+</svg>
+<span class="absolute inset-0 flex items-center justify-center text-label-md font-bold text-primary">68%</span>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant/60 ml-2 font-bold">10:06 AM</span>
+</div>
+</div>
+</div>
+<!-- Quick Action Pills -->
+<div class="px-8 py-4 flex gap-3 flex-wrap relative z-10">
+<button class="bg-white hover:bg-secondary-container/30 border border-outline-variant/40 px-4 py-2 rounded-full text-label-md font-semibold text-primary transition-all flex items-center gap-2 active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">help_center</span> Ask a question
+                </button>
+<button class="bg-white hover:bg-secondary-container/30 border border-outline-variant/40 px-4 py-2 rounded-full text-label-md font-semibold text-primary transition-all flex items-center gap-2 active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">analytics</span> Request analysis
+                </button>
+<button class="bg-white hover:bg-secondary-container/30 border border-outline-variant/40 px-4 py-2 rounded-full text-label-md font-semibold text-primary transition-all flex items-center gap-2 active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">tips_and_updates</span> Get recommendations
+                </button>
+</div>
+<!-- Message Input -->
+<div class="p-8 pt-2 relative z-10">
+<div class="bg-white rounded-[32px] p-2 pr-4 shadow-lg border border-outline-variant/20 flex items-center gap-3">
+<button class="p-3 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-body-md py-4" placeholder="Pregúntale algo a Finora..." type="text"/>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="bg-primary text-on-primary h-12 w-12 rounded-full flex items-center justify-center hover:bg-primary-container transition-colors shadow-md active:scale-90 duration-150">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+<p class="text-[10px] text-center mt-3 text-on-surface-variant/40 font-medium">Finora AI puede cometer errores. Verifica la información financiera importante.</p>
+</div>
+</section>
+<!-- Sidebar / Market Context Panel -->
+<aside class="w-80 bg-surface-container-lowest border-l border-outline-variant/30 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+<h3 class="text-label-md font-bold uppercase tracking-widest text-on-surface-variant">Contexto de Mercado</h3>
+<!-- Market Forecast Card -->
+<div class="bg-surface-bright rounded-card p-5 border border-outline-variant/40 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="w-8 h-8 rounded-lg bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]">query_stats</span>
+</div>
+<span class="text-label-sm font-bold text-on-surface-variant">Forecast 2024</span>
+</div>
+<div class="space-y-6 relative">
+<div class="absolute left-[15px] top-2 bottom-2 w-0.5 bg-outline-variant/30"></div>
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-white border-2 border-outline-variant flex items-center justify-center z-10 scale-75">
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+</div>
+<p class="text-label-sm font-bold">2023</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">Explosive growth of DeFi protocols.</p>
+</div>
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-white border-2 border-secondary flex items-center justify-center z-10 scale-75">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+</div>
+<p class="text-label-sm font-bold text-secondary">2024</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">Mainstream adoption of CBDCs.</p>
+</div>
+<div class="relative pl-10">
+<div class="absolute left-0 top-1 w-8 h-8 rounded-full bg-primary border-2 border-primary flex items-center justify-center z-10 scale-75">
+<div class="w-2 h-2 rounded-full bg-white"></div>
+</div>
+<p class="text-label-sm font-bold">2025</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">1 BTC reaches $500k target.</p>
+</div>
+</div>
+</div>
+<!-- Asset Cards -->
+<div class="bg-[#B2F0E8] rounded-card p-5 shadow-sm border border-[#87E4DB]">
+<div class="flex justify-between items-start mb-2">
+<div>
+<p class="text-[11px] font-bold text-primary/60">BTC Price</p>
+<p class="text-headline-md font-bold text-primary">21,105$</p>
+</div>
+<span class="material-symbols-outlined text-primary">north_east</span>
+</div>
+<div class="mt-4">
+<p class="text-label-sm font-bold text-primary">+28.21%</p>
+<div class="h-2 w-full bg-white/30 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+</div>
+</div>
+<div class="bg-tertiary-fixed rounded-card p-5 shadow-sm border border-tertiary-fixed-dim">
+<div class="flex justify-between items-start mb-2">
+<div>
+<p class="text-[11px] font-bold text-on-tertiary-fixed-variant/60">Market Cap Forecast</p>
+<p class="text-headline-md font-bold text-on-tertiary-fixed-variant">1,3trln$</p>
+</div>
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant">north_east</span>
+</div>
+<div class="h-12 w-full mt-2 opacity-50">
+<!-- Simple Path Visualization -->
+<svg class="w-full h-full" viewbox="0 0 100 40">
+<path class="text-on-tertiary-fixed-variant" d="M0,35 Q20,30 40,32 T70,10 T100,5" fill="none" stroke="currentColor" stroke-width="2"></path>
+<circle class="text-on-tertiary-fixed-variant" cx="70" cy="10" fill="currentColor" r="3"></circle>
+</svg>
+</div>
+</div>
+<!-- Agent Avatar Floating Presence (3D Placeholder) -->
+<div class="mt-auto">
+<div class="glass-card rounded-[32px] p-6 text-center ai-glow border-2 border-[#87E4DB]/30 relative overflow-hidden group transition-transform hover:scale-105">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary-fixed/10 to-transparent"></div>
+<img class="w-32 h-32 mx-auto relative z-10 drop-shadow-2xl" data-alt="A 3D character of a cute robot, stylized minimalist design, soft translucent white material, with a friendly digital face glowing neon green, floating in front of a blurred abstract technology background, high quality 3D render, Octane render." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXmf6dLwdID75fionwdv0uCwkMYZUf5f7bwKE70Ax7GwteeSEwwU4TETNm9nescldg6ON5CfjuKhN_2utwGT8mvTs6tiq_FHUNsLaSrGI4yKpekK8cd_YWOtsWv_U2HpKA9-qJvt7gGAeeIELzAPzYILGqZdAyIdxDKHAfDNnPpl3YUsCwlq3JE_hD7yD1HlipDEa4WkwKYX3TS1ItSVaR4FGiY4zqxAEKbPxY5vLRsruU7FmPGCp-liyB23FBFHpErzCrZkluEqpE"/>
+<h4 class="text-label-md font-bold mt-4 relative z-10">Finora Co-pilot</h4>
+<p class="text-[11px] text-on-surface-variant relative z-10">"Estoy lista para tu siguiente análisis de cartera."</p>
+<div class="mt-4 flex justify-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style="animation-delay: 0.1s"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style="animation-delay: 0.2s"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style="animation-delay: 0.3s"></div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<script>
+        // Simple Interaction: Scroll to bottom of chat
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // Message input animation
+        const msgInput = document.querySelector('input[type="text"]');
+        msgInput.addEventListener('focus', () => {
+            msgInput.parentElement.classList.add('ring-2', 'ring-secondary');
+        });
+        msgInput.addEventListener('blur', () => {
+            msgInput.parentElement.classList.remove('ring-2', 'ring-secondary');
+        });
+    </script>
+</body></html>

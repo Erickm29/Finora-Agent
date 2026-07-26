@@ -13,7 +13,7 @@ Spec del sistema: agente IA compartido, bot Telegram (grammY) como canal convers
 | Mercado / moneda | **Bolivia**, **Bs = pesos bolivianos (BOB)** |
 | Dinero real | Solo preparar; ejecutar tras confirmación humana (web o callback Telegram) |
 | API HTTP | Hono (preferido) sobre Node ≥ 18 |
-| Web app | Next.js App Router + Supabase SSR |
+| Web app | Vite + React SPA (`apps/web`); Supabase SSR/JWT pendiente |
 
 Detalle de datos: [`data-model.md`](data-model.md). Contratos HTTP: [`api.md`](api.md). Dominio y copy: [`domain.md`](domain.md).
 
@@ -28,7 +28,7 @@ flowchart TB
 
   subgraph edge [Edge]
     Bot[Telegram Bot grammY]
-    Next[Next.js App Router]
+    Next[Vite React Dashboard]
   end
 
   subgraph core [Finora Core]
@@ -74,7 +74,7 @@ Finora-Agent/
   apps/
     api/                 # Core HTTP + agent runtime + webhooks Telegram
     bot/                 # grammY (puede vivir dentro de api como módulo)
-    web/                 # Next.js dashboard
+    web/                 # Vite + React dashboard
   packages/
     domain/              # metas, microahorros, guardrails, wallbit prep
     db/                  # tipos Supabase, queries
@@ -135,7 +135,7 @@ sequenceDiagram
 |------|------------|-----------------|
 | Conversación / razonamiento | Gemini (Google AI) | Cerebro del agente |
 | Chat principal | grammY + Telegram Bot API | Canal conversacional |
-| Dashboard | Next.js | Metas, progreso, confirmaciones |
+| Dashboard | Vite + React | Metas, progreso, confirmaciones |
 | Precios de productos | Firecrawl | Scraping / extracción de precios reales |
 | Contexto económico | Exa | Macro, noticias, mercado (contexto BO) |
 | Patrimonio / divisas | Wallbit | Consulta patrimonio; preparar protección de ahorro |
@@ -196,9 +196,10 @@ flowchart LR
 
 ## Frontend (`apps/web`)
 
-- Next.js App Router; UI de progreso y confirmaciones
-- Lectura con Supabase + RLS; mutaciones sensibles (confirm Wallbit) vía API core
-- Estado vacío: CTA al bot Telegram + deep link/QR
+- Vite + React + Tailwind; UI de progreso y confirmaciones
+- Cliente HTTP tipado en `services/` (mocks o API Hono `/v1` con `X-User-Id` local)
+- Auth JWT Supabase pendiente; mutaciones sensibles (confirm Wallbit) vía API core
+- Estado vacío: CTA al bot Telegram + deep link
 - Copy en español, montos en Bs (BOB)
 
 ## Jobs / proactividad (fase 2)

@@ -9,7 +9,9 @@ Usar esta regla al tocar APIs, clientes HTTP, webhooks o persistencia.
 
 | Servicio | Uso en Finora |
 |----------|----------------|
-| Gemini (Google AI) | Cerebro conversacional y razonamiento del agente |
+| Gemini (Google AI) | Proveedor LLM (HA layer; también Groq / OpenRouter) |
+| Groq | Proveedor LLM primario recomendado (failover HA) |
+| OpenRouter | Proveedor LLM de respaldo (failover HA) |
 | grammY + Telegram Bot API | Canal conversacional principal |
 | Next.js (web) | Dashboard: metas, progreso, confirmaciones |
 | Firecrawl | Precios reales de productos en la web |

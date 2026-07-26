@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { assertRuntimeEnv, env } from "./env.js";
 import { v1 } from "./routes/v1.js";
+import { ai } from "./ai/index.js";
 import {
   getBot,
   startTelegramPolling,
@@ -12,18 +13,43 @@ import {
 assertRuntimeEnv();
 
 const app = new Hono();
-app.use("*", cors());
+app.use(
+  "*",
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-User-Id",
+      "X-Requested-With",
+    ],
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
 
-app.get("/health", (c) =>
-  c.json({
+app.get("/health", (c) => {
+  const stats = ai.getStats();
+  return c.json({
     ok: true,
     service: "finora-api",
     memoryStore: env.useMemory,
     supabase: !env.useMemory && Boolean(env.supabaseUrl),
     telegram: Boolean(env.telegramBotToken),
     gemini: Boolean(env.geminiApiKey),
-  }),
-);
+    ai: {
+      configured: ai.configuredProviders(),
+      lastProvider: stats.lastProvider,
+      lastModel: stats.lastModel,
+      byProvider: stats.byProvider,
+    },
+  });
+});
 
 app.route("/v1", v1);
 

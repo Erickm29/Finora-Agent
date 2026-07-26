@@ -3,7 +3,7 @@
 Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de emergencia) en un plan operativo con microahorros, guardrails informativos y acciones preparadas (p. ej. Wallbit), **siempre con confirmación humana**.
 
 - **Chat principal:** Telegram (grammY)
-- **Dashboard:** Next.js (metas, progreso, confirmar acciones) — ownership frontend externo; stub en `apps/web`
+- **Dashboard:** Vite + React (`apps/web`) — metas, progreso, confirmar acciones
 - **Mercado por defecto:** Bolivia — montos en **pesos bolivianos (Bs / BOB)**
 
 ---
@@ -21,7 +21,7 @@ Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de 
 
 | Área | Estado |
 |------|--------|
-| Monorepo npm (`apps/api`, `packages/*`) | Listo |
+| Monorepo npm (`apps/api`, `apps/web`, `packages/*`) | Listo |
 | Domain (goals, microahorros, guardrails, pending_actions) + tests | Listo |
 | API REST Hono (`/v1/...`, `/health`) | Listo |
 | Bot Telegram (polling local + comandos + callbacks) | Listo |
@@ -31,7 +31,7 @@ Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de 
 | Firecrawl (precios) / Exa (macro BO) / ElevenLabs (voz) | Listo |
 | Wallbit execute | Stub (sin cuenta/fondos aún) |
 | Auth JWT Supabase para web | Pendiente (`X-User-Id` en local) |
-| Dashboard producción | Owner frontend |
+| Dashboard Vite (`apps/web`) | Listo (mocks + adaptador `/v1`) |
 | Jobs proactivos (precio / recordatorios) | Fase 2 |
 
 ---
@@ -40,7 +40,7 @@ Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de 
 
 | Rol | Tecnología |
 |-----|------------|
-| LLM | Gemini (Google AI, API compatible OpenAI) |
+| LLM | AI Provider Layer: Groq / Gemini / OpenRouter (failover HA) |
 | Chat | grammY + Telegram Bot API |
 | API | Hono (`apps/api`) |
 | Domain | `@finora/domain` (TypeScript) |
@@ -49,7 +49,7 @@ Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de 
 | Macro / noticias | Exa |
 | Voz | ElevenLabs |
 | Divisas | Wallbit (prepare → confirm; execute stub hoy) |
-| Dashboard | Next.js (stub / otro owner) |
+| Dashboard | Vite + React + Tailwind (`apps/web`) |
 
 ---
 
@@ -58,7 +58,7 @@ Mentor financiero activo: convierte metas reales (laptop, viaje, casa, fondo de 
 ```
 Finora-Agent/
 ├── apps/api          # Hono + grammY + agent runtime + adapters
-├── apps/web          # Stub dashboard (no está en workspaces de este track)
+├── apps/web          # Dashboard Vite + React + Tailwind
 ├── packages/shared   # Zod, errores, helpers
 ├── packages/domain   # Reglas de negocio + tests
 ├── packages/db       # Cliente / tipos Supabase
@@ -71,7 +71,7 @@ Finora-Agent/
 | Área | Owner |
 |------|--------|
 | Backend + agente + bot + domain + Supabase | Este track |
-| Frontend / dashboard | Compañero (contrato: [`docs/context/api.md`](docs/context/api.md)) |
+| Frontend / dashboard | `apps/web` (contrato: [`docs/context/api.md`](docs/context/api.md)) |
 
 ---
 
@@ -88,13 +88,16 @@ Finora-Agent/
 ```bash
 npm install
 cp .env.example .env
-# Completar al menos: GEMINI_API_KEY, TELEGRAM_BOT_TOKEN
+# Completar al menos: TELEGRAM_BOT_TOKEN + alguna AI key (GROQ_/GEMINI_/OPENROUTER_)
 # Para persistir: SUPABASE_* y USE_MEMORY_STORE=false
 
 npm run build:packages
 npm run dev:api          # http://localhost:3001/health
+npm run dev:web          # http://localhost:5173 (Vite dashboard)
 npm test                 # tests de domain
 ```
+
+Dashboard: copiá `apps/web/.env.example` → `apps/web/.env`. Con `VITE_USE_MOCKS=false` habla con la API (`X-User-Id`).
 
 Detalle: [`docs/context/local-dev.md`](docs/context/local-dev.md).
 
@@ -105,11 +108,14 @@ Detalle: [`docs/context/local-dev.md`](docs/context/local-dev.md).
 | `USE_MEMORY_STORE` | `true` = memoria; `false` = Supabase |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Persistencia (service role solo en API) |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_MODE=local` | Bot con long polling |
-| `GEMINI_API_KEY` / `GEMINI_MODEL` | Cerebro del agente (`gemini-flash-latest` por defecto) |
+| `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` | Proveedores LLM (HA; orden en `apps/api/config/ai-providers.json`) |
+| `DEFAULT_PROVIDER` | Opcional: fuerza el primero del orden (ej. `groq`) |
+| `GEMINI_MODEL` | Override de modelo Gemini (default en JSON: `gemini-2.5-flash`) |
 | `FIRECRAWL_API_KEY` | Precios reales |
 | `EXA_API_KEY` | Contexto macro Bolivia |
 | `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | Resumen por voz |
 | `WALLBIT_API_KEY` / `WALLBIT_API_URL` | Vacío = stub seguro tras confirm |
+| `VITE_API_URL` / `VITE_USE_MOCKS` | Dashboard Vite (`apps/web/.env`) |
 
 Schema: aplicar / ya aplicado `supabase/migrations/20260725120000_init.sql` (Telegram-first: profiles sin exigir `auth.users`).
 

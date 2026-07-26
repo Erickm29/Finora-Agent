@@ -1,8 +1,9 @@
-import OpenAI from "openai";
 import type { AgentTurnInput } from "@finora/shared";
 import { FinoraError } from "@finora/shared";
+import type OpenAI from "openai";
 import { services } from "../container.js";
 import { env } from "../env.js";
+import { ai, AllProvidersFailedError } from "../ai/index.js";
 import {
   generateVoiceSummary,
   researchMacroContext,
@@ -410,64 +411,6 @@ async function heuristicTurn(
   ]);
 }
 
-async function sleep(ms: number) {
-  await new Promise((r) => setTimeout(r, ms));
-}
-
-function geminiErrorStatus(err: unknown): number | null {
-  if (err && typeof err === "object" && "status" in err) {
-    return Number((err as { status: number }).status);
-  }
-  const msg = err instanceof Error ? err.message : String(err);
-  if (/\b429\b/.test(msg) || /rate.?limit/i.test(msg)) return 429;
-  return null;
-}
-
-/** Serialize Gemini calls + retry on 429 to avoid free-tier stampedes. */
-let geminiQueue: Promise<unknown> = Promise.resolve();
-
-async function createGeminiCompletion(
-  client: OpenAI,
-  params: {
-    model: string;
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
-    tools: OpenAI.Chat.Completions.ChatCompletionTool[];
-  },
-) {
-  const run = async () => {
-    const delaysMs = [0, 2000, 5000, 12000];
-    let lastErr: unknown;
-    for (let attempt = 0; attempt < delaysMs.length; attempt++) {
-      if (delaysMs[attempt] > 0) {
-        console.warn(
-          `[finora] Gemini retry ${attempt}/${delaysMs.length - 1} in ${delaysMs[attempt]}ms`,
-        );
-        await sleep(delaysMs[attempt]);
-      }
-      try {
-        return await client.chat.completions.create({
-          model: params.model,
-          messages: params.messages,
-          tools: params.tools,
-        });
-      } catch (err) {
-        lastErr = err;
-        const status = geminiErrorStatus(err);
-        if (status === 429 && attempt < delaysMs.length - 1) continue;
-        throw err;
-      }
-    }
-    throw lastErr;
-  };
-
-  const next = geminiQueue.then(run, run);
-  geminiQueue = next.then(
-    () => undefined,
-    () => undefined,
-  );
-  return next;
-}
-
 export async function runAgentTurn(
   input: AgentTurnInput,
 ): Promise<{ replies: AgentReply[]; sessionId: string }> {
@@ -499,15 +442,10 @@ export async function runAgentTurn(
     }
   }
 
-  if (!env.geminiApiKey) {
+  if (!ai.hasAnyProvider()) {
     return heuristicTurn(input, session.id);
   }
 
-  // Gemini via OpenAI-compatible Chat Completions + tool calling
-  const client = new OpenAI({
-    apiKey: env.geminiApiKey,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-  });
   const prior = await loadHistoryForLlm(session.id);
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -519,44 +457,23 @@ export async function runAgentTurn(
   for (let i = 0; i < maxRounds; i++) {
     let completion;
     try {
-      completion = await createGeminiCompletion(client, {
-        model: env.geminiModel,
-        messages,
-        tools,
-      });
+      completion = await ai.chat(messages, { tools });
     } catch (err) {
-      const status =
-        err && typeof err === "object" && "status" in err
-          ? Number((err as { status: number }).status)
-          : 502;
-      if (status === 429) {
-        console.warn(
-          "[finora] Gemini 429 persistente — usando mentor local (heuristic).",
+      if (err instanceof AllProvidersFailedError) {
+        throw new FinoraError(
+          "AI_PROVIDERS_FAILED",
+          `Ningún proveedor de IA respondió: ${err.message.slice(0, 280)}`,
+          502,
         );
-        const fallback = await heuristicTurn(input, session.id);
-        // Prefix only for display; heuristic already persisted the turn.
-        return {
-          sessionId: session.id,
-          replies: fallback.replies.map((r, idx) =>
-            idx === 0
-              ? {
-                  ...r,
-                  text:
-                    `(Gemini está saturado un momento; te respondo en modo local.)\n\n` +
-                    r.text,
-                }
-              : r,
-          ),
-        };
       }
-      const detail = err instanceof Error ? err.message : "Gemini error";
+      const detail = err instanceof Error ? err.message : "AI error";
       throw new FinoraError(
-        "GEMINI_ERROR",
-        `Gemini falló: ${detail.slice(0, 300)}`,
+        "AI_ERROR",
+        `El proveedor de IA falló: ${detail.slice(0, 300)}`,
         502,
       );
     }
-    const msg = completion.choices[0]?.message;
+    const msg = completion.message;
     if (!msg) break;
 
     if (msg.tool_calls?.length) {
@@ -582,7 +499,8 @@ export async function runAgentTurn(
       continue;
     }
 
-    const content = msg.content ?? "Listo.";
+    const content =
+      typeof msg.content === "string" ? msg.content : msg.content ? JSON.stringify(msg.content) : "Listo.";
     const buttons: AgentReply["buttons"] = [];
     const confirmMatch = content.match(/action:confirm:[0-9a-f-]+/i);
     const cancelMatch = content.match(/action:cancel:[0-9a-f-]+/i);

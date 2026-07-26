@@ -19,9 +19,9 @@ Dev local: `docs/context/local-dev.md`
 
 | Rol | Servicio |
 |-----|----------|
-| LLM / razonamiento | Gemini (Google AI) |
+| LLM / razonamiento | AI Provider Layer (Groq, Gemini, OpenRouter) |
 | Chat principal | grammY + Telegram Bot API |
-| Dashboard | Next.js |
+| Dashboard | Vite + React (`apps/web`) |
 | Precios de productos | Firecrawl |
 | Contexto macro / noticias | Exa |
 | Patrimonio y divisas | Wallbit |
@@ -36,10 +36,11 @@ npm install
 cp .env.example .env   # USE_MEMORY_STORE=true por defecto
 npm run build:packages # shared/db/domain → dist/
 npm run dev:api        # API + bot (si hay TELEGRAM_BOT_TOKEN)
+npm run dev:web        # Dashboard Vite en :5173
 npm test               # domain unit tests
 ```
 
-Requisitos: Node.js ≥ 18. Workspaces de este track: `apps/api`, `packages/*` (`apps/web` es stub / owner externo).
+Requisitos: Node.js ≥ 18. Workspaces: `apps/api`, `apps/web`, `packages/*`.
 
 ## Reglas duras
 

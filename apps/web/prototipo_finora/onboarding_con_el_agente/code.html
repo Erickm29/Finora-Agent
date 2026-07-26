@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finora Agent - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#006e71",
+                    "inverse-primary": "#8cd2dd",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#7cd9d0",
+                    "inverse-on-surface": "#eff1f1",
+                    "primary-container": "#015d67",
+                    "surface-bright": "#f8fafa",
+                    "on-secondary-fixed-variant": "#004f52",
+                    "tertiary-container": "#005f59",
+                    "tertiary-fixed": "#96f3ea",
+                    "on-surface": "#191c1d",
+                    "primary": "#00444b",
+                    "tertiary": "#004541",
+                    "surface-dim": "#d8dadb",
+                    "surface": "#f8fafa",
+                    "secondary": "#00696c",
+                    "on-primary-fixed-variant": "#004f57",
+                    "on-secondary-fixed": "#002021",
+                    "primary-fixed-dim": "#8cd2dd",
+                    "surface-container-low": "#f2f4f4",
+                    "secondary-container": "#73f2f7",
+                    "on-surface-variant": "#3f484a",
+                    "surface-container-high": "#e6e8e9",
+                    "on-background": "#191c1d",
+                    "surface-variant": "#e0e3e3",
+                    "primary-fixed": "#a8eefa",
+                    "secondary-fixed": "#76f5fa",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#56d9de",
+                    "on-primary-container": "#8ed3df",
+                    "tertiary-fixed-dim": "#79d6cd",
+                    "surface-tint": "#186872",
+                    "on-tertiary-fixed-variant": "#00504b",
+                    "background": "#f8fafa",
+                    "on-tertiary-fixed": "#00201e",
+                    "on-error-container": "#93000a",
+                    "outline": "#6f797a",
+                    "inverse-surface": "#2d3132",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bec8ca",
+                    "on-primary-fixed": "#001f24",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceeef",
+                    "surface-container-highest": "#e0e3e3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "stack-md": "24px",
+                    "card-padding": "24px",
+                    "stack-lg": "48px",
+                    "base": "8px",
+                    "container-margin-desktop": "40px",
+                    "container-margin-mobile": "20px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Montserrat"],
+                    "headline-lg": ["Montserrat"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg": ["Montserrat"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Montserrat"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafa;
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(135, 228, 219, 0.3);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 234, 235, 1);
+        }
+        .mesh-bg {
+            background-color: #f8fafa;
+            background-image: radial-gradient(at 100% 0%, #76f5fa 0%, transparent 40%),
+                              radial-gradient(at 0% 100%, #caf0c1 0%, transparent 40%);
+        }
+    </style>
+</head>
+<body class="mesh-bg min-h-screen">
+<div class="max-w-4xl mx-auto px-container-margin-mobile md:px-container-margin-desktop py-stack-lg">
+<header class="flex items-center justify-between mb-stack-lg">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-secondary-fixed ai-glow">
+<img class="w-full h-full object-cover" data-alt="A high-fidelity 3D character design of a friendly AI financial agent. The character has soft, stylized features with a futuristic metallic skin that reflects a minty green glow. It is wearing a professional yet modern sleek suit in deep charcoal. The background is a soft, blurred studio setup with warm, welcoming lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQcGLO3FKn-ZxH3fxtLmEUwxt8gKnjA_IMRGQhRFKiv_4_Z5t2z3_n9UpMtpjddoM6xiDvZ_d8XY5x9ecXyOGFBnVbsLi4VNEFMGYyi-ioUy4Cmifx4aseiXHLMAQOmRQ-iWdVCS1eze4Ts43LkoxeEjBpJ7WdrqIhy9hwAZpBQvmeTPQNJ2ydG_WJLlOcCTWtOevLF7RG6N5r7ruLj2vFhY1tNTSo9g1cTrsd74PqlSfmiLFqwhFzcWxuyc9-sAZ1HP095JL8yDLU"/>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md text-primary">Finora Agent</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">Wealth Intelligence Online</p>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-2 px-4 py-2 bg-surface-container rounded-full">
+<span class="material-symbols-outlined text-secondary text-[20px]">verified_user</span>
+<span class="text-label-md font-label-md text-secondary">Secured by AES-256</span>
+</div>
+</header>
+<main class="space-y-stack-md relative">
+<!-- Agent First Question -->
+<div class="flex items-start gap-4 animate-in slide-in-from-left duration-700">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container">smart_toy</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container p-card-padding rounded-2xl rounded-tl-none max-w-lg shadow-sm ai-glow">
+<p class="text-body-lg font-body-lg">¿Qué quieres lograr hoy con tu capital?</p>
+</div>
+</div>
+<!-- Choice Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-stack-md">
+<button class="glass-card p-stack-md rounded-2xl text-left hover:border-secondary transition-all group hover:scale-[1.02] duration-200">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary">shopping_bag</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface">Comprar algo importante</span>
+</button>
+<button class="glass-card p-stack-md rounded-2xl text-left hover:border-secondary transition-all group hover:scale-[1.02] duration-200">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary">savings</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface">Ahorrar</span>
+</button>
+<button class="glass-card p-stack-md rounded-2xl text-left hover:border-secondary transition-all group hover:scale-[1.02] duration-200">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary">health_and_safety</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface">Fondo de emergencia</span>
+</button>
+<button class="glass-card p-stack-md rounded-2xl text-left hover:border-secondary transition-all group hover:scale-[1.02] duration-200">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-primary">more_horiz</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface">Otro</span>
+</button>
+</div>
+<!-- User Response -->
+<div class="flex items-start gap-4 justify-end">
+<div class="bg-primary text-on-primary p-card-padding rounded-2xl rounded-tr-none max-w-lg shadow-sm">
+<p class="text-body-lg font-body-lg">Quiero comprar una MacBook Pro para mi nuevo estudio.</p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary">person</span>
+</div>
+</div>
+<!-- Agent Plan Logic -->
+<div class="flex items-start gap-4 animate-in slide-in-from-left duration-1000 delay-500">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container">smart_toy</span>
+</div>
+<div class="space-y-4 max-w-2xl">
+<div class="bg-secondary-container text-on-secondary-container p-card-padding rounded-2xl rounded-tl-none shadow-sm ai-glow">
+<p class="text-body-lg font-body-lg">He analizado tu objetivo. Basado en tus ingresos actuales y gastos recurrentes, voy a crear un plan personalizado para que lo logres sin estrés financiero.</p>
+</div>
+<!-- Summary Card (Bento Style) -->
+<div class="glass-card rounded-[24px] overflow-hidden shadow-sm p-0">
+<div class="flex flex-col md:flex-row h-full">
+<div class="p-card-padding md:w-2/5 bg-secondary-fixed/10 border-r border-outline-variant/30 flex flex-col justify-center">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">laptop_mac</span>
+<h3 class="text-headline-md font-headline-md text-primary">MacBook Pro</h3>
+</div>
+<p class="text-display-lg font-display-lg text-primary">8.500 <span class="text-headline-md">Bs</span></p>
+<div class="mt-4 flex items-center gap-2">
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container rounded text-label-sm font-label-sm">High Priority</span>
+<span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant rounded text-label-sm font-label-sm">Tech Goal</span>
+</div>
+</div>
+<div class="p-card-padding md:w-3/5 grid grid-cols-2 gap-stack-md">
+<div class="space-y-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Tiempo Estimado</span>
+<div class="flex items-baseline gap-1">
+<span class="text-headline-lg font-headline-lg text-on-surface">10</span>
+<span class="text-body-md font-body-md text-on-surface-variant">meses</span>
+</div>
+<div class="w-full h-2 bg-secondary-container/30 rounded-full mt-2">
+<div class="w-1/3 h-full bg-secondary rounded-full"></div>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Ahorro Mensual</span>
+<div class="flex items-baseline gap-1 text-on-secondary-container font-semibold">
+<span class="text-headline-lg font-headline-lg">850</span>
+<span class="text-body-md font-body-md">Bs</span>
+</div>
+<p class="text-label-sm font-label-sm text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                                        Optimizado por IA
+                                    </p>
+</div>
+<div class="col-span-2 pt-2">
+<button class="w-full bg-secondary hover:bg-primary text-on-primary py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-3 group active:scale-95 duration-150">
+                                        Crear mi plan
+                                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer / Progress -->
+<footer class="mt-stack-lg border-t border-outline-variant/30 pt-stack-md flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="flex gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div class="w-8 h-2 rounded-full bg-secondary"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container-highest"></div>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant">
+                Paso 3 de 4: Configuración de Metas
+            </p>
+<div class="flex gap-4">
+<button class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors">Omitir por ahora</button>
+<button class="text-label-md font-label-md text-secondary hover:underline">Ayuda</button>
+</div>
+</footer>
+</div>
+<!-- Background Elements -->
+<div class="fixed top-20 right-[-10%] w-96 h-96 bg-secondary-fixed/5 blur-[120px] rounded-full -z-10"></div>
+<div class="fixed bottom-10 left-[-5%] w-72 h-72 bg-tertiary-fixed/5 blur-[100px] rounded-full -z-10"></div>
+<script>
+        // Simple entry animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.6s ease-out';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100 * (index + 1));
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finora Agent - Dashboard</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Montserrat & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#006e71",
+                    "inverse-primary": "#8cd2dd",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#7cd9d0",
+                    "inverse-on-surface": "#eff1f1",
+                    "primary-container": "#015d67",
+                    "surface-bright": "#f8fafa",
+                    "on-secondary-fixed-variant": "#004f52",
+                    "tertiary-container": "#005f59",
+                    "tertiary-fixed": "#96f3ea",
+                    "on-surface": "#191c1d",
+                    "primary": "#00444b",
+                    "tertiary": "#004541",
+                    "surface-dim": "#d8dadb",
+                    "surface": "#f8fafa",
+                    "secondary": "#00696c",
+                    "on-primary-fixed-variant": "#004f57",
+                    "on-secondary-fixed": "#002021",
+                    "primary-fixed-dim": "#8cd2dd",
+                    "surface-container-low": "#f2f4f4",
+                    "secondary-container": "#73f2f7",
+                    "on-surface-variant": "#3f484a",
+                    "surface-container-high": "#e6e8e9",
+                    "on-background": "#191c1d",
+                    "surface-variant": "#e0e3e3",
+                    "primary-fixed": "#a8eefa",
+                    "secondary-fixed": "#76f5fa",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#56d9de",
+                    "on-primary-container": "#8ed3df",
+                    "tertiary-fixed-dim": "#79d6cd",
+                    "surface-tint": "#186872",
+                    "on-tertiary-fixed-variant": "#00504b",
+                    "background": "#f8fafa",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#00201e",
+                    "on-error-container": "#93000a",
+                    "outline": "#6f797a",
+                    "inverse-surface": "#2d3132",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bec8ca",
+                    "on-primary-fixed": "#001f24",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceeef",
+                    "surface-container-highest": "#e0e3e3",
+                    "kelly-green": "#00ACB1",
+                    "mint": "#87E4DB",
+                    "pistachio": "#CAF0C1",
+                    "forest-green": "#015D67"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px",
+                    "card": "24px"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "stack-md": "24px",
+                    "card-padding": "24px",
+                    "stack-lg": "48px",
+                    "base": "8px",
+                    "container-margin-desktop": "40px",
+                    "container-margin-mobile": "20px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Montserrat"],
+                    "headline-lg": ["Montserrat"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg": ["Montserrat"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Montserrat"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mint-glow {
+            box-shadow: 0 0 20px 0 rgba(135, 228, 219, 0.3);
+        }
+        .soft-card {
+            background-color: #ffffff;
+            border: 1px solid #E0EAEB;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04);
+            border-radius: 24px;
+            padding: 24px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .progress-capsule {
+            height: 12px;
+            border-radius: 9999px;
+            background: rgba(202, 240, 193, 0.2);
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00ACB1;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bec8ca;
+            border-radius: 10px;
+        }
+        .agent-gradient {
+            background: linear-gradient(135deg, #87E4DB 0%, #FFFFFF 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-mint selection:text-primary overflow-hidden">
+<!-- SideNavBar Shell -->
+<nav class="h-full w-64 fixed left-0 top-0 bg-primary flex flex-col py-6 border-r border-outline-variant shadow-sm z-50">
+<div class="px-6 mb-10 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary font-bold">account_balance_wallet</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-extrabold text-secondary-fixed">Finora Agent</h1>
+<p class="text-[10px] text-on-primary-container tracking-widest uppercase">Intelligent Wealth</p>
+</div>
+</div>
+<div class="flex-grow space-y-1">
+<!-- Dashboard (Active) -->
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 mx-2 active:scale-95 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="ads_click">ads_click</span>
+<span class="text-label-md font-label-md">Goals</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="text-label-md font-label-md">Agent Chat</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</div>
+<div class="px-4 py-6">
+<div class="bg-primary-container rounded-2xl p-4 mb-6">
+<p class="text-label-sm text-secondary-fixed mb-2 font-bold">Pro Account</p>
+<p class="text-white text-[12px] mb-4 opacity-80">Access advanced AI portfolio analytics.</p>
+<button class="w-full bg-secondary-fixed text-primary font-bold py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">Upgrade to Pro</button>
+</div>
+<div class="space-y-1">
+<a class="flex items-center gap-3 text-on-primary/60 hover:text-white px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+<span class="text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary/60 hover:text-error px-4 py-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="logout">logout</span>
+<span class="text-label-md">Sign Out</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface/80 backdrop-blur-md border-b border-surface-variant/30 flex justify-between items-center h-16 px-8 ml-64 shadow-sm">
+<div class="flex items-center gap-8">
+<h2 class="text-headline-sm font-headline-md font-bold text-primary">Portfolio</h2>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 text-label-md" href="#">Portfolio</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors text-label-md" href="#">Insights</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors text-label-md" href="#">History</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-kelly-green w-64 transition-all" placeholder="Search assets..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-white px-5 py-2 rounded-full font-bold text-sm hover:opacity-80 transition-opacity active:opacity-70">New Goal</button>
+<div class="flex items-center gap-3 border-l border-outline-variant pl-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-kelly-green">
+<img class="w-full h-full object-cover" data-alt="A clean, professional close-up headshot of a friendly professional in a bright, modern light-mode office setting. The lighting is soft and flattering, with subtle mint and kelly-green accents in the background to match a high-end financial app's aesthetic. The subject is smiling warmly, looking directly at the camera." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_1vMwhoRHHkkhEfa_o2vZrZvha2Hnbqm5e6mJPPn-OGbmdiBwJ1EGGx-x6W-Yngzg1EJB9N_VapH-5dVzVNvCnz_nDkfnByKRxpXWWYrgqJdZVKTHVef7Gzxl0GticYHm3Pz96t620G_JyCgzIgm-RRnTNPrLgZBFpu5aJ14VGT6VkCylD8zHnkhHt6dDFQj9-XqPfpoNQoc57WM2MGH4TQ7J5DxvSQDhLZG25VLtV2H1YXvQh7rbfYAlNj1RuNc7gEIc9qVGrqER"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-16 h-screen overflow-y-auto custom-scrollbar bg-background">
+<div class="p-8 max-w-7xl mx-auto">
+<div class="grid grid-cols-12 gap-gutter">
+<!-- ROW 1: AI AGENT & PRIMARY GOAL -->
+<!-- AI Agent Recommendation Section -->
+<section class="col-span-12 lg:col-span-5 relative">
+<div class="soft-card h-full flex flex-col justify-between overflow-hidden relative group border-mint/30 border-2">
+<!-- AI Decorative Background element -->
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-mint/20 blur-3xl rounded-full"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 rounded-2xl agent-gradient flex items-center justify-center shadow-lg border border-white/50">
+<span class="material-symbols-outlined text-forest-green text-3xl" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h3 class="text-headline-md font-headline-md text-primary">Finora analizó tu situación</h3>
+<p class="text-label-md text-on-surface-variant">Insights personalizados hoy</p>
+</div>
+</div>
+<div class="bg-mint/10 rounded-2xl p-6 border border-mint/20 mb-6">
+<p class="text-body-lg text-primary font-medium leading-relaxed italic">
+                                    "Basado en tus gastos de transporte de la última semana, <span class="text-forest-green font-bold underline decoration-kelly-green">puedes separar 200 Bs adicionales</span> este mes para tu meta de MacBook sin afectar tu presupuesto esencial."
+                                </p>
+</div>
+</div>
+<div class="flex flex-wrap gap-3 relative z-10">
+<button class="bg-kelly-green text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-[1.02] transition-transform active:scale-95 shadow-md">Aceptar</button>
+<button class="bg-surface border-1.5 border-forest-green border text-forest-green px-6 py-3 rounded-xl font-bold text-sm hover:bg-forest-green/5 transition-colors">Ver detalles</button>
+<button class="text-forest-green font-bold text-sm px-4 py-3 flex items-center gap-2 hover:underline">
+<span class="material-symbols-outlined text-base">chat</span>
+                                Preguntar al agente
+                            </button>
+</div>
+</div>
+</section>
+<!-- Primary Goal Card: MacBook Pro -->
+<section class="col-span-12 lg:col-span-7">
+<div class="soft-card h-full bg-forest-green text-white relative overflow-hidden">
+<!-- Background Pattern -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#fff 0.5px, transparent 0.5px); background-size: 20px 20px;"></div>
+<div class="flex justify-between items-start mb-8 relative z-10">
+<div>
+<div class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full mb-4">
+<span class="text-lg">🎯</span>
+<span class="text-label-sm font-bold tracking-wide uppercase">Meta Prioritaria</span>
+</div>
+<h2 class="text-display-lg font-display-lg leading-tight mb-1">Comprar MacBook Pro</h2>
+<p class="text-mint/80 font-medium">Restan 3000 Bs • Meta: Noviembre 2026</p>
+</div>
+<div class="w-16 h-16 rounded-3xl bg-mint/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+<span class="material-symbols-outlined text-mint text-3xl">laptop_mac</span>
+</div>
+</div>
+<div class="space-y-6 relative z-10">
+<div class="flex justify-between items-end mb-2">
+<div>
+<p class="text-mint text-label-sm uppercase font-bold tracking-wider mb-1">Ahorrado</p>
+<p class="text-headline-md font-headline-md">5500 Bs</p>
+</div>
+<div class="text-right">
+<p class="text-headline-md font-headline-md">65%</p>
+</div>
+</div>
+<div class="h-4 bg-white/10 rounded-full overflow-hidden p-1">
+<div class="h-full bg-gradient-to-r from-mint to-kelly-green rounded-full shadow-[0_0_15px_rgba(135,228,219,0.5)]" style="width: 65%"></div>
+</div>
+<div class="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
+<div>
+<p class="text-white/60 text-[10px] uppercase font-bold tracking-widest mb-1">Ritmo Mensual</p>
+<p class="text-label-md font-bold text-mint">+450 Bs</p>
+</div>
+<div>
+<p class="text-white/60 text-[10px] uppercase font-bold tracking-widest mb-1">Proyección</p>
+<p class="text-label-md font-bold text-white">A tiempo</p>
+</div>
+<div>
+<p class="text-white/60 text-[10px] uppercase font-bold tracking-widest mb-1">Contribuciones</p>
+<p class="text-label-md font-bold text-white">24 meses</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 2: BENTO GRID OF INSIGHTS -->
+<!-- Smart Alerts -->
+<section class="col-span-12 md:col-span-4 space-y-gutter">
+<div class="soft-card bg-surface-container-low border-none h-full">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-label-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-kelly-green">campaign</span>
+                                Alertas Inteligentes
+                            </h3>
+<button class="text-[10px] text-kelly-green font-bold uppercase tracking-wider">Limpiar</button>
+</div>
+<div class="space-y-4">
+<!-- Alert 1 -->
+<div class="flex gap-4 p-4 rounded-2xl bg-white border border-outline-variant/30 hover:border-kelly-green/50 transition-colors group cursor-pointer shadow-sm">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex-shrink-0 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-lg">sell</span>
+</div>
+<div>
+<p class="text-label-md font-bold text-on-surface">Bajó de precio</p>
+<p class="text-[12px] text-on-surface-variant leading-tight">El MacBook Pro que sigues bajó 15% en Amazon.</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-kelly-green ml-auto">chevron_right</span>
+</div>
+<!-- Alert 2 -->
+<div class="flex gap-4 p-4 rounded-2xl bg-white border border-outline-variant/30 hover:border-error/50 transition-colors group cursor-pointer shadow-sm">
+<div class="w-10 h-10 rounded-xl bg-error-container flex-shrink-0 flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined text-lg">trending_down</span>
+</div>
+<div>
+<p class="text-label-md font-bold text-on-surface">Progreso lento</p>
+<p class="text-[12px] text-on-surface-variant leading-tight">Estás 5% debajo de tu objetivo mensual esperado.</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-error ml-auto">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Micro-savings Habit Card -->
+<section class="col-span-12 md:col-span-4">
+<div class="soft-card h-full flex flex-col justify-center items-center text-center p-8 bg-mint/5 relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[120px]">savings</span>
+</div>
+<div class="w-20 h-20 rounded-full bg-pistachio/30 flex items-center justify-center mb-6 mint-glow">
+<span class="material-symbols-outlined text-kelly-green text-4xl" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<h4 class="text-headline-md font-headline-md text-primary mb-2">Hábito Smart</h4>
+<p class="text-body-md text-on-surface-variant mb-6 px-4">
+                            "Ahorraste <span class="text-kelly-green font-bold">15 Bs</span> evitando un gasto innecesario en café hoy."
+                        </p>
+<div class="bg-white px-4 py-2 rounded-full border border-outline-variant/50 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-kelly-green animate-pulse"></div>
+<span class="text-label-sm font-bold text-primary">Impacto total: +340 Bs/año</span>
+</div>
+</div>
+</section>
+<!-- Secondary Wealth Section: Savings distribution -->
+<section class="col-span-12 md:col-span-4">
+<div class="soft-card h-full">
+<h3 class="text-label-md font-bold text-primary mb-6">Distribución de Capital</h3>
+<div class="space-y-5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-kelly-green/10 flex items-center justify-center text-kelly-green">
+<span class="material-symbols-outlined text-lg">savings</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between text-label-sm mb-1">
+<span class="text-on-surface-variant">Fondo Emergencia</span>
+<span class="text-on-surface font-bold">12,500 Bs</span>
+</div>
+<div class="progress-capsule">
+<div class="progress-fill" style="width: 80%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">show_chart</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between text-label-sm mb-1">
+<span class="text-on-surface-variant">Inversiones</span>
+<span class="text-on-surface font-bold">4,200 Bs</span>
+</div>
+<div class="progress-capsule">
+<div class="progress-fill bg-primary" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/30">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-kelly-green text-sm">link</span>
+                                    Cuentas Conectadas
+                                </span>
+<span class="bg-pistachio text-forest-green text-[10px] px-2 py-0.5 rounded-full font-bold">4 ACTIVAS</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 3: RECENT ACTIVITY (Wide Asymmetric) -->
+<section class="col-span-12">
+<div class="soft-card bg-white p-0 overflow-hidden flex flex-col md:flex-row min-h-[300px]">
+<div class="w-full md:w-1/3 bg-surface-container p-8">
+<h3 class="text-headline-md font-headline-md text-primary mb-4">Análisis de Flujo</h3>
+<p class="text-body-md text-on-surface-variant mb-8">Tus ingresos han superado los egresos en un 12% este trimestre.</p>
+<div class="flex items-end gap-2 h-32 mb-8">
+<div class="flex-grow bg-mint rounded-t-lg transition-all hover:scale-x-110 cursor-pointer" style="height: 40%"></div>
+<div class="flex-grow bg-kelly-green rounded-t-lg transition-all hover:scale-x-110 cursor-pointer" style="height: 65%"></div>
+<div class="flex-grow bg-forest-green rounded-t-lg transition-all hover:scale-x-110 cursor-pointer" style="height: 85%"></div>
+<div class="flex-grow bg-mint rounded-t-lg transition-all hover:scale-x-110 cursor-pointer" style="height: 55%"></div>
+<div class="flex-grow bg-kelly-green rounded-t-lg transition-all hover:scale-x-110 cursor-pointer" style="height: 95%"></div>
+</div>
+<button class="w-full flex items-center justify-between text-forest-green font-bold hover:bg-forest-green/5 p-3 rounded-xl transition-colors">
+                                Ver reporte mensual
+                                <span class="material-symbols-outlined">trending_flat</span>
+</button>
+</div>
+<div class="flex-grow p-8">
+<div class="flex justify-between items-center mb-6">
+<h4 class="text-label-md font-bold text-on-surface">Transacciones Recientes</h4>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+</button>
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-lg">download</span>
+</button>
+</div>
+</div>
+<table class="w-full text-left">
+<thead class="border-b border-outline-variant/30">
+<tr class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">
+<th class="pb-4 px-2">Descripción</th>
+<th class="pb-4 px-2">Categoría</th>
+<th class="pb-4 px-2">Fecha</th>
+<th class="pb-4 px-2 text-right">Monto</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="group hover:bg-surface-container-lowest transition-colors">
+<td class="py-4 px-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">local_cafe</span>
+</div>
+<span class="text-label-md font-medium">Starbucks Coffee</span>
+</div>
+</td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">Comida y Bebida</span></td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">Hoy, 10:45 AM</span></td>
+<td class="py-4 px-2 text-right text-label-md font-bold text-error">- 35.00 Bs</td>
+</tr>
+<tr class="group hover:bg-surface-container-lowest transition-colors">
+<td class="py-4 px-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-pistachio/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-forest-green">payments</span>
+</div>
+<span class="text-label-md font-medium">Transferencia Saldo</span>
+</div>
+</td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">Ingresos</span></td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">Ayer, 04:20 PM</span></td>
+<td class="py-4 px-2 text-right text-label-md font-bold text-kelly-green">+ 1,200.00 Bs</td>
+</tr>
+<tr class="group hover:bg-surface-container-lowest transition-colors">
+<td class="py-4 px-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">shopping_bag</span>
+</div>
+<span class="text-label-md font-medium">Apple Store Online</span>
+</div>
+</td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">Tecnología</span></td>
+<td class="py-4 px-2"><span class="text-label-sm text-on-surface-variant">12 Oct 2023</span></td>
+<td class="py-4 px-2 text-right text-label-md font-bold text-error">- 850.00 Bs</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Hidden on Mobile) -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-kelly-green text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-50 mint-glow">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</button>
+<script>
+        // Micro-interaction for cards
+        document.querySelectorAll('.soft-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                if(!card.classList.contains('bg-forest-green')) {
+                    card.classList.add('border-kelly-green/30');
+                }
+            });
+            card.addEventListener('mouseleave', () => {
+                if(!card.classList.contains('bg-forest-green')) {
+                    card.classList.remove('border-kelly-green/30');
+                }
+            });
+        });
+
+        // Simple tab logic
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (item.classList.contains('bg-secondary-container')) return;
+                
+                navItems.forEach(i => {
+                    i.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+                    i.classList.add('text-on-primary', 'hover:bg-primary-container/50');
+                });
+                
+                item.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                item.classList.remove('text-on-primary', 'hover:bg-primary-container/50');
+            });
+        });
+    </script>
+</body></html>

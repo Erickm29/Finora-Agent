@@ -3,14 +3,17 @@
   "private": true,
   "workspaces": [
     "apps/api",
+    "apps/web",
     "packages/*"
   ],
   "scripts": {
     "build:packages": "npm run build -w @finora/shared && npm run build -w @finora/db && npm run build -w @finora/domain",
     "dev:api": "npm run build:packages && npm run dev -w @finora/api",
+    "dev:web": "npm run dev -w @finora/web",
     "dev": "npm run dev:api",
-    "build": "npm run build:packages && npm run build -w @finora/api",
-    "test": "npm run build:packages && npm run test -w @finora/domain",
+    "build": "npm run build:packages && npm run build -w @finora/api && npm run build -w @finora/web",
+    "build:web": "npm run build -w @finora/web",
+    "test": "npm run build:packages && npm run test -w @finora/domain && npm run test -w @finora/api",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
   },
   "engines": {

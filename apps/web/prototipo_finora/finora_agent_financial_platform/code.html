@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finora Agent - Inteligencia Financiera Personal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#006e71",
+                        "inverse-primary": "#8cd2dd",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#7cd9d0",
+                        "inverse-on-surface": "#eff1f1",
+                        "primary-container": "#015d67",
+                        "surface-bright": "#f8fafa",
+                        "on-secondary-fixed-variant": "#004f52",
+                        "tertiary-container": "#005f59",
+                        "tertiary-fixed": "#96f3ea",
+                        "on-surface": "#191c1d",
+                        "primary": "#00444b",
+                        "tertiary": "#004541",
+                        "surface-dim": "#d8dadb",
+                        "surface": "#f8fafa",
+                        "secondary": "#00696c",
+                        "on-primary-fixed-variant": "#004f57",
+                        "on-secondary-fixed": "#002021",
+                        "primary-fixed-dim": "#8cd2dd",
+                        "surface-container-low": "#f2f4f4",
+                        "secondary-container": "#73f2f7",
+                        "on-surface-variant": "#3f484a",
+                        "surface-container-high": "#e6e8e9",
+                        "on-background": "#191c1d",
+                        "surface-variant": "#e0e3e3",
+                        "primary-fixed": "#a8eefa",
+                        "secondary-fixed": "#76f5fa",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#56d9de",
+                        "on-primary-container": "#8ed3df",
+                        "tertiary-fixed-dim": "#79d6cd",
+                        "surface-tint": "#186872",
+                        "on-tertiary-fixed-variant": "#00504b",
+                        "background": "#f8fafa",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#00201e",
+                        "on-error-container": "#93000a",
+                        "outline": "#6f797a",
+                        "inverse-surface": "#2d3132",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#bec8ca",
+                        "on-primary-fixed": "#001f24",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eceeef",
+                        "surface-container-highest": "#e0e3e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "24px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "12px",
+                        "stack-md": "24px",
+                        "card-padding": "24px",
+                        "stack-lg": "48px",
+                        "base": "8px",
+                        "container-margin-desktop": "40px",
+                        "container-margin-mobile": "20px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 234, 235, 0.5);
+        }
+        .mint-glow {
+            box-shadow: 0 0 30px rgba(135, 228, 219, 0.3);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #00444b 0%, #00696c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .bezier-curve {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 3s ease-in-out forwards;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: 0; }
+        }
+        .agent-float {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-surface-variant/30">
+<nav class="max-w-7xl mx-auto px-container-margin-mobile md:px-container-margin-desktop h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img alt="Finora Agent Logo" class="h-10 w-10 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd7UVTNcPfuw8N_3oBN8Md0iSsEW_i1k02J0vHP4OsXIgL7bDHOGUZfvB0Rzmr7uC3laxnCPjBvhgD_7XG93nIO0udL1zrvTphK_inN60WzdeatoU1HUgv46TlosyWdCnM8M30TfDIMN4rmfAwEMucWDSbq4AoykylBU4eoSpedFw4eK5IQzTbUZClBKeIRZubF1jTMf8QY0VWA6S_HJ_5PR3p7OvHYkcV0vbxRTETx_wN5iMSaoSTiexAlm4xCNSYZTGCDGU7y8g5"/>
+<span class="font-headline-md text-headline-md font-bold text-primary">Finora Agent</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Características</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Casos de Uso</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Seguridad</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden sm:block text-label-md font-label-md text-primary px-4 py-2 hover:opacity-80 transition-opacity">Iniciar sesión</button>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-95">
+                    Crear cuenta
+                </button>
+</div>
+</nav>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative max-w-7xl mx-auto px-container-margin-mobile md:px-container-margin-desktop py-12 md:py-24 overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<div class="relative z-10 space-y-stack-md">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+                        IA Financiera de Próxima Generación
+                    </div>
+<h1 class="text-display-lg font-display-lg leading-tight gradient-text">
+                        Convierte tus metas financieras en un plan automático.
+                    </h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-xl">
+                        Finora te ayuda a cumplir objetivos personales: comprar una laptop, ahorrar para una vivienda o crear un fondo de emergencia con ayuda de un agente inteligente.
+                    </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="bg-primary text-on-primary font-headline-md text-label-md px-8 py-4 rounded-xl shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-2">
+                            Comenzar gratis <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="border-2 border-primary text-primary font-headline-md text-label-md px-8 py-4 rounded-xl hover:bg-primary/5 transition-all">
+                            Ver demo interactiva
+                        </button>
+</div>
+<div class="flex items-center gap-4 pt-8 border-t border-surface-variant/50">
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-surface" data-alt="A professional close-up portrait of a diverse female software engineer smiling warmly, set against a blurred modern office background with soft teal and white lighting, emphasizing human-centric fintech values." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKEyoyhqsfU520V9TDLZB34Awqo_6i7dAbLPShCxe0QAirioIGaLvfepwUrrE3K_5K8u5aubHPu5e2qVUQ-eyF2ILFJsEZsuiNOlvO6BUSPkUmCmaQTYLaOf4URgzYKDwO_y-mUemEHDzdbBSGh9gizbB1kWRC1remtMDdHxg3LpChtUEduLf_obxz0Wru6el4Ow_Mb-aMs5Zslc-39LeZZ-EAysj0TTn8O2VcUrNEIYtDHgYKl6o66GTv2HQk0TXb83ECxd4UNGQC"/>
+<img class="w-10 h-10 rounded-full border-2 border-surface" data-alt="A friendly, approachable male finance professional in his 30s with a clean-cut look, smiling confidently in a high-key bright setting that reflects professional stability and approachable wealth management." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOgYJjaVR3FyTSU5PBzfsPpFSS2sjlenH1RZ9EZo0fE1jzGfvlAyRl7j9OPtDFc3u_xsEQybcB7EORu2I0i2ZrN2DQy7goxXUeg2G-CR5ZNMCuj5h_nVk5u3_5LJFwuAhkOrg8grL3Im10rkIEzREcO_Oa3JdezXajFL_COH5f-ji3T3SiGklSGwFVpBPB5xGM5FJyAMpFi05SUbGSKAlN7RJRUoyarijUpJdTl7X_cGIhPs-yaGsyJXait_XwfuzJT7_cB8XeJ2iX"/>
+<img class="w-10 h-10 rounded-full border-2 border-surface" data-alt="A young, enthusiastic woman wearing modern glasses and casual business attire, looking at the camera with a helpful and intelligent expression, representing the target user of a modern AI financial agent." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYQdys79lqv4EHTb7Q_l6x16ztAMNY2HrUfMveV5SiIN3vifUjsU29x3-3-fvxouT6pgyCuYTFBKgQtZApAphJVYyzJtFuFtudjekO0yvSBQ9X3Oh7ftkhvrMPF53KnM-luR1QYuJXE38tmZj3wyW6FzHzu9Ob1ytHzxdiQre_WY8GEcVoFTk8wwnb187O2EF5UECWjp4c8fZgcuZwiJi66cYfFY0F-KiO_sBMgtj1tbTtKp1hsXe7T11e7XnNQIAet6cRO9CtWkfz"/>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant">
+                            Únete a más de <span class="text-primary font-bold">15,000</span> usuarios alcanzando sus metas hoy.
+                        </p>
+</div>
+</div>
+<div class="relative">
+<!-- Glassmorphism Preview Dashboard -->
+<div class="relative z-20 agent-float">
+<div class="glass-card rounded-2xl p-6 shadow-2xl mint-glow">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-headline-md text-headline-md">Panel de Control</h3>
+<p class="text-label-sm text-on-surface-variant">Actualizado hace 1 min</p>
+</div>
+<div class="bg-primary text-on-primary p-2 rounded-lg">
+<span class="material-symbols-outlined">insights</span>
+</div>
+</div>
+<div class="space-y-6">
+<!-- Progress Card -->
+<div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30">
+<div class="flex justify-between items-end mb-2">
+<span class="text-label-md font-bold text-on-surface">Meta: Vivienda propia</span>
+<span class="text-primary font-bold">64%</span>
+</div>
+<div class="h-3 w-full bg-secondary-container/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[64%]"></div>
+</div>
+<p class="mt-3 text-label-sm text-on-surface-variant italic">
+                                        "Finora ha detectado un ahorro extra de $250 este mes."
+                                    </p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-tertiary-fixed rounded-xl p-4">
+<span class="text-label-sm block mb-1">Ahorro Mensual</span>
+<span class="text-headline-md font-bold text-on-tertiary-fixed-variant">$1,250</span>
+</div>
+<div class="bg-secondary-fixed rounded-xl p-4">
+<span class="text-label-sm block mb-1">Días para Meta</span>
+<span class="text-headline-md font-bold text-on-secondary-fixed-variant">142</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative elements -->
+<div class="absolute -top-10 -right-10 w-64 h-64 bg-secondary-container/30 rounded-full blur-3xl -z-10"></div>
+<div class="absolute -bottom-20 -left-20 w-80 h-80 bg-primary-container/10 rounded-full blur-3xl -z-10"></div>
+<!-- Floating AI Indicator -->
+<div class="absolute -right-4 top-1/2 -translate-y-1/2 glass-card p-4 rounded-2xl shadow-xl border border-primary/20 flex items-center gap-3 z-30 scale-110">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<p class="text-label-sm font-bold text-primary leading-none">Finora Agent</p>
+<p class="text-[10px] text-on-surface-variant">Analizando gastos...</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid Benefits -->
+<section class="bg-surface-container-lowest py-24">
+<div class="max-w-7xl mx-auto px-container-margin-mobile md:px-container-margin-desktop">
+<div class="text-center mb-16 space-y-4">
+<h2 class="text-headline-lg font-headline-lg text-primary">¿Por qué elegir Finora?</h2>
+<p class="text-body-md text-on-surface-variant max-w-2xl mx-auto">
+                        Combinamos la precisión de los datos con la intuición de la inteligencia artificial para crear un camino claro hacia tu libertad financiera.
+                    </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[280px]">
+<!-- Large Bento Item -->
+<div class="md:col-span-8 md:row-span-2 glass-card rounded-2xl p-card-padding flex flex-col justify-between overflow-hidden relative group">
+<div class="relative z-10 max-w-md">
+<div class="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center mb-6">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<h3 class="text-headline-md font-headline-md mb-4">Análisis Predictivo de IA</h3>
+<p class="text-body-md text-on-surface-variant">
+                                Finora no solo registra tus gastos; predice tendencias futuras basándose en tus hábitos históricos. Recibe alertas inteligentes antes de que ocurran gastos imprevistos y optimiza tu presupuesto en tiempo real.
+                            </p>
+</div>
+<div class="absolute bottom-0 right-0 w-2/3 h-2/3 -mb-10 -mr-10 opacity-40 group-hover:opacity-60 transition-opacity">
+<svg class="w-full h-full" viewbox="0 0 400 300">
+<path class="bezier-curve" d="M0,250 Q100,50 200,200 T400,100" fill="none" stroke="#00ACB1" stroke-width="4"></path>
+<circle cx="200" cy="200" fill="#00ACB1" r="6"></circle>
+<circle cx="400" cy="100" fill="#00ACB1" r="6"></circle>
+</svg>
+</div>
+</div>
+<!-- Square Bento Item -->
+<div class="md:col-span-4 glass-card rounded-2xl p-card-padding flex flex-col justify-between hover:bg-secondary-container/10 transition-colors">
+<div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">savings</span>
+</div>
+<div>
+<h3 class="text-headline-sm font-headline-md mb-2">Micro-ahorro Automático</h3>
+<p class="text-label-md text-on-surface-variant">
+                                Redondea tus compras y transfiere el excedente a tus metas sin que te des cuenta.
+                            </p>
+</div>
+</div>
+<!-- Square Bento Item -->
+<div class="md:col-span-4 glass-card rounded-2xl p-card-padding flex flex-col justify-between hover:bg-tertiary-fixed/10 transition-colors">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined">map</span>
+</div>
+<div>
+<h3 class="text-headline-sm font-headline-md mb-2">Hoja de Ruta Personal</h3>
+<p class="text-label-md text-on-surface-variant">
+                                Planes paso a paso para metas complejas como vivienda o retiro.
+                            </p>
+</div>
+</div>
+<!-- Horizontal Long Item -->
+<div class="md:col-span-12 md:row-span-1 glass-card rounded-2xl p-card-padding flex items-center gap-8">
+<div class="hidden lg:flex flex-shrink-0 w-32 h-32 rounded-2xl bg-surface-variant items-center justify-center overflow-hidden">
+<img class="object-cover w-full h-full opacity-80" data-alt="A clean, minimalist abstract digital art piece showing golden geometric shapes and glowing light particles on a dark emerald background, representing advanced high-fidelity financial technology and security." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjflgvIv7pNR0YpCEYxOYMm9dIud4EIyEdX5VRWnYfQCw8Tihr8tJbP2w2rODJ2jPmgs07UMRPIze7_hhpZ-9QQOGsamY6vBA3LTDpgH94ZmcZqdIIlQ5Dyh7kCsoESmSEnxPXwSEnXuuqIyup21nv60XJvmSuUaPPBFastOgsIRNqnpSKZaEmh0Mc8pihlr3MBufnotU_tSzNNhyOgpPtbIo3lfdvuPwpHJOmzEXfk4xurqBG5Yozvie9L9yg5KGIIAT6DwIE12Jn"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-headline-md font-headline-md mb-2">Seguridad de Nivel Bancario</h3>
+<p class="text-body-md text-on-surface-variant">
+                                Tus datos están protegidos con encriptación de grado militar AES-256. Finora nunca comparte tus datos personales con terceros. Tu privacidad es nuestro pilar fundamental.
+                            </p>
+</div>
+<button class="flex-shrink-0 hidden sm:block px-6 py-3 border border-outline rounded-lg text-label-md hover:bg-surface-variant transition-colors">
+                            Saber más
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof / Final CTA -->
+<section class="py-24 relative overflow-hidden">
+
+<div class="max-w-4xl mx-auto px-container-margin-mobile text-center relative z-10">
+<h2 class="text-display-lg font-display-lg leading-tight text-primary mb-8">
+                    ¿Listo para tomar el control de tu futuro?
+                </h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mb-12">
+                    Únete a miles de personas que ya están transformando sus sueños en planes accionables con el apoyo de nuestra inteligencia artificial.
+                </p>
+<div class="bg-surface glass-card p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-center gap-6 max-w-2xl mx-auto">
+<img class="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-white" data-alt="A vibrant 3D character illustration of a professional woman with orange hair sitting comfortably in a modern armchair while working on a laptop, surrounded by floating golden spheres and soft teal gradients, creating a friendly and helpful fintech atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgGEN8yZXc9N8Fhyi3m8DamTjgQUHVQ2DcZe9J76-nzgxdkfWqieaRHffNYExlB-h7RD72Kp2g-zCPUrqN4R-U_IvYflHRSGYjiBj9UX3VBkRF7Ie3ndYS7wi5c06esH2n6kNyIcq4rM8L7XgttmFoJL0ZBc4DZCGK0X6qhBo6Tov0uDWf37G91foSUB29K6uV9TmKpuueLzNedeQ96UzCjOxVJHsYxvPWVhytvl9yNrfHk-YrmkRckf5nJzCKkA61wwNXmydzOmFJ"/>
+<div class="text-left flex-grow">
+<h4 class="font-bold text-headline-sm">Empieza hoy mismo</h4>
+<p class="text-label-md text-on-surface-variant mb-4">Crea tu cuenta en menos de 2 minutos.</p>
+<div class="flex gap-4">
+<input class="flex-grow bg-surface-container-low border-outline-variant rounded-lg px-4 py-3 text-label-md focus:ring-primary focus:border-primary" placeholder="tu@email.com" type="email"/>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-lg font-bold hover:brightness-110">Registro</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-primary text-on-primary-container py-16">
+<div class="max-w-7xl mx-auto px-container-margin-mobile md:px-container-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="col-span-1 md:col-span-1">
+<div class="flex items-center gap-3 mb-6">
+<img alt="Finora Agent Logo" class="h-8 w-8 brightness-0 invert opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd7UVTNcPfuw8N_3oBN8Md0iSsEW_i1k02J0vHP4OsXIgL7bDHOGUZfvB0Rzmr7uC3laxnCPjBvhgD_7XG93nIO0udL1zrvTphK_inN60WzdeatoU1HUgv46TlosyWdCnM8M30TfDIMN4rmfAwEMucWDSbq4AoykylBU4eoSpedFw4eK5IQzTbUZClBKeIRZubF1jTMf8QY0VWA6S_HJ_5PR3p7OvHYkcV0vbxRTETx_wN5iMSaoSTiexAlm4xCNSYZTGCDGU7y8g5"/>
+<span class="font-headline-md text-headline-md font-bold text-inverse-primary">Finora Agent</span>
+</div>
+<p class="text-label-md opacity-80 leading-relaxed">
+                    Inteligencia financiera para la vida moderna. Ayudándote a construir riqueza, una meta a la vez.
+                </p>
+</div>
+<div>
+<h5 class="font-bold text-label-md mb-6 text-white">Producto</h5>
+<ul class="space-y-4 opacity-70 text-label-sm">
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Cómo funciona</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Precios</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Hoja de ruta</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Seguridad</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-label-md mb-6 text-white">Compañía</h5>
+<ul class="space-y-4 opacity-70 text-label-sm">
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Sobre nosotros</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Blog</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Carreras</a></li>
+<li><a class="hover:text-secondary-fixed transition-colors" href="#">Contacto</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-label-md mb-6 text-white">Descarga la App</h5>
+<div class="space-y-4">
+<div class="flex items-center gap-3 bg-primary-container px-4 py-2 rounded-lg cursor-pointer hover:bg-primary-container/80 transition-colors border border-on-primary-container/20">
+<span class="material-symbols-outlined text-inverse-primary">file_download</span>
+<div>
+<p class="text-[10px] uppercase opacity-70">App Store</p>
+<p class="text-label-sm font-bold">Descargar</p>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-primary-container px-4 py-2 rounded-lg cursor-pointer hover:bg-primary-container/80 transition-colors border border-on-primary-container/20">
+<span class="material-symbols-outlined text-inverse-primary">replace_image</span>
+<div>
+<p class="text-[10px] uppercase opacity-70">Google Play</p>
+<p class="text-label-sm font-bold">Descargar</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-container-margin-mobile md:px-container-margin-desktop mt-16 pt-8 border-t border-on-primary-container/10 flex flex-col md:flex-row justify-between items-center gap-4 text-[12px] opacity-60">
+<p>© 2024 Finora Agent. Todos los derechos reservados.</p>
+<div class="flex gap-6">
+<a href="#">Privacidad</a>
+<a href="#">Términos</a>
+<a href="#">Cookies</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'scale(0.96)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple scroll reveal effect for bento items
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(card);
+        });
+    </script>
+</body></html>
