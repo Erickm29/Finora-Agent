@@ -4,10 +4,150 @@ import { FinoraError } from "@finora/shared";
 import { env } from "../env.js";
 import { getGoalAnalysisService, services } from "../container.js";
 import { formatAnalysisForChat } from "../analysis/format.js";
+import { getMarketContext } from "../analysis/market-context.js";
 import { runAgentTurn, type AgentReply } from "../agent/runtime.js";
 import { registerChannelNotifier } from "../agent/notifier.js";
 
 let bot: Bot | null = null;
+
+type GoalRow = Awaited<ReturnType<ReturnType<typeof services>["goals"]["list"]>>[number];
+
+type GoalsApi = ReturnType<typeof services>["goals"] & {
+  setPrimary?: (userId: string, goalId: string) => Promise<{ id: string; name: string }>;
+  cancel?: (userId: string, goalId: string) => Promise<{ id: string; name: string }>;
+};
+
+function isPrimaryMeta(goal: GoalRow): boolean {
+  return goal.metadata?.is_primary === true;
+}
+
+/** Metas visibles (soft-delete = cancelled fuera de listas activas). */
+function listActiveGoals(goals: GoalRow[]): GoalRow[] {
+  return goals.filter((g) => g.status !== "cancelled");
+}
+
+/**
+ * Regla compartida sprint2: is_primary → primera active → goals[0].
+ * Solo entre metas no canceladas.
+ */
+function pickPrimaryGoal(goals: GoalRow[]): GoalRow | undefined {
+  const active = listActiveGoals(goals);
+  if (!active.length) return undefined;
+  return (
+    active.find(isPrimaryMeta) ??
+    active.find((g) => g.status === "active") ??
+    active[0]
+  );
+}
+
+async function getPrimaryGoal(userId: string): Promise<GoalRow | null> {
+  const goals = await services().goals.list(userId);
+  return pickPrimaryGoal(goals) ?? null;
+}
+
+async function setPrimaryGoal(
+  userId: string,
+  goalId: string,
+): Promise<{ id: string; name: string }> {
+  const goalsApi = services().goals as GoalsApi;
+  if (typeof goalsApi.setPrimary === "function") {
+    return goalsApi.setPrimary(userId, goalId);
+  }
+  // Fallback: PATCH metadata si domain no expone setPrimary.
+  const all = await goalsApi.list(userId);
+  const target = all.find((g) => g.id === goalId);
+  if (!target || target.status === "cancelled") {
+    throw new FinoraError("GOAL_NOT_FOUND", "Meta no encontrada", 404);
+  }
+  for (const g of all) {
+    if (g.id === goalId) continue;
+    if (!isPrimaryMeta(g)) continue;
+    await goalsApi.patch(userId, g.id, {
+      metadata: { ...g.metadata, is_primary: false },
+    });
+  }
+  const updated = await goalsApi.patch(userId, goalId, {
+    metadata: { ...target.metadata, is_primary: true },
+  });
+  return { id: updated.id, name: updated.name };
+}
+
+async function cancelGoal(
+  userId: string,
+  goalId: string,
+): Promise<{ id: string; name: string }> {
+  const goalsApi = services().goals as GoalsApi;
+  if (typeof goalsApi.cancel === "function") {
+    return goalsApi.cancel(userId, goalId);
+  }
+  const updated = await goalsApi.patch(userId, goalId, { status: "cancelled" });
+  return { id: updated.id, name: updated.name };
+}
+
+function findGoalByNameOrIndex(
+  goals: GoalRow[],
+  query: string,
+): GoalRow | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  const asNum = Number(q);
+  if (Number.isInteger(asNum) && asNum >= 1 && asNum <= goals.length) {
+    return goals[asNum - 1];
+  }
+  return (
+    goals.find((g) => g.name.toLowerCase() === q) ??
+    goals.find((g) => g.name.toLowerCase().includes(q))
+  );
+}
+
+function formatMarketSummary(
+  ctx: Awaited<ReturnType<typeof getMarketContext>>,
+): string {
+  const lines: string[] = ["Mercado (resumen corto)"];
+
+  if (ctx.stub || ctx.source === "partial" || ctx.source === "fallback") {
+    lines.push(`Fuente: ${ctx.source} — no es ejecución de trades.`);
+  } else {
+    lines.push(`Fuente: ${ctx.source}`);
+  }
+
+  const rate = ctx.wallbit.rate;
+  if (rate?.rate != null) {
+    lines.push(
+      `Tipo: ${rate.from}→${rate.to} ≈ ${Number(rate.rate).toLocaleString("es-BO")}`,
+    );
+  }
+
+  const cash = ctx.wallbit.portfolio?.usd_cash;
+  if (cash != null) {
+    lines.push(`Caja inversión: USD ${Number(cash).toLocaleString("es-BO")}`);
+  }
+
+  for (const a of ctx.wallbit.assets.slice(0, 3)) {
+    lines.push(
+      a.price != null
+        ? `• ${a.symbol}: ${Number(a.price).toLocaleString("es-BO")}`
+        : `• ${a.symbol}`,
+    );
+  }
+
+  for (const insight of ctx.insights.slice(0, 2)) {
+    lines.push(insight);
+  }
+
+  if (ctx.macro?.summary && lines.length < 7) {
+    const snippet = ctx.macro.summary.replace(/\s+/g, " ").trim().slice(0, 180);
+    if (snippet) {
+      lines.push(`Macro BO: ${snippet}${snippet.length >= 180 ? "…" : ""}`);
+    }
+  }
+
+  if (lines.length === 1) {
+    lines.push("Sin datos de mercado por ahora. Probá de nuevo en un rato.");
+  }
+
+  return lines.slice(0, 8).join("\n");
+}
 
 /** Límite de la Bot API de Telegram por mensaje. */
 const TELEGRAM_MAX_CHARS = 4096;
@@ -91,12 +231,6 @@ function keyboardFromButtons(
     kb.text(b.label, b.callbackData).row();
   }
   return kb;
-}
-
-/** Misma regla que /progreso: meta activa, o la primera si no hay status active. */
-async function getPrimaryGoal(userId: string) {
-  const goals = await services().goals.list(userId);
-  return goals.find((g) => g.status === "active") ?? goals[0] ?? null;
 }
 
 function defaultMicrosavingAmount(baseMonthlyBobs: number): number {
@@ -188,7 +322,7 @@ export function getBot(): Bot | null {
     await resolveUser(ctx);
     await ctx.reply(
       "Hola, soy Finora — tu mentor financiero en Bolivia (Bs).\n" +
-        "Contame tu meta o usá /meta, /progreso, /plan, /microahorro, /proteger, /ayuda.",
+        "Contame tu meta o usá /meta, /progreso, /plan, /priorizar, /mercado, /ayuda.",
     );
   });
 
@@ -196,11 +330,14 @@ export function getBot(): Bot | null {
     await ctx.reply(
       "Comandos:\n" +
         "/start — comenzar\n" +
-        "/meta — ver tus metas\n" +
-        "/progreso — avance de la meta activa\n" +
-        "/plan — plan de inversión de la meta activa\n" +
+        "/meta — ver metas activas\n" +
+        "/progreso — avance de la meta prioritaria\n" +
+        "/plan — plan de inversión de la meta prioritaria\n" +
         "/microahorro — preparar un aporte chico (requiere confirmación)\n" +
         "/proteger — preparar conversión a USD vía Wallbit (requiere confirmación)\n" +
+        "/priorizar — elegir meta prioritaria (ej. /priorizar 1)\n" +
+        "/eliminar — archivar meta prioritaria (o /eliminar nombre)\n" +
+        "/mercado — resumen corto Wallbit/macro\n" +
         "/ayuda — esta ayuda\n\n" +
         "También podés escribir en lenguaje natural. Nada de dinero se mueve sin tu OK.",
     );
@@ -208,16 +345,17 @@ export function getBot(): Bot | null {
 
   bot.command("meta", async (ctx) => {
     const profile = await resolveUser(ctx);
-    const goals = await services().goals.list(profile.id);
+    const goals = listActiveGoals(await services().goals.list(profile.id));
     if (!goals.length) {
       await ctx.reply('No tenés metas aún. Escribí por ejemplo: "Quiero comprar una laptop".');
       return;
     }
-    const lines = goals.map(
-      (g) =>
-        `• ${g.name}: ${g.accumulatedBobs}/${g.targetAmountBobs} Bs (${Math.round(g.progressRatio * 100)}%)`,
-    );
-    await ctx.reply(`Tus metas:\n${lines.join("\n")}`);
+    const primary = pickPrimaryGoal(goals);
+    const lines = goals.map((g, i) => {
+      const star = primary && g.id === primary.id ? " ★" : "";
+      return `${i + 1}. ${g.name}${star}: ${g.accumulatedBobs}/${g.targetAmountBobs} Bs (${Math.round(g.progressRatio * 100)}%)`;
+    });
+    await ctx.reply(`Tus metas:\n${lines.join("\n")}\n\n★ = prioritaria (/priorizar N)`);
   });
 
   bot.command("progreso", async (ctx) => {
@@ -227,8 +365,9 @@ export function getBot(): Bot | null {
       await ctx.reply("Todavía no hay una meta activa.");
       return;
     }
+    const mark = isPrimaryMeta(active) ? " (prioritaria)" : "";
     await ctx.reply(
-      `${active.name}: ${active.accumulatedBobs} de ${active.targetAmountBobs} Bs.\n` +
+      `${active.name}${mark}: ${active.accumulatedBobs} de ${active.targetAmountBobs} Bs.\n` +
         `Cuota base sugerida: ${active.baseMonthlyBobs} Bs/mes.`,
     );
   });
@@ -353,14 +492,125 @@ export function getBot(): Bot | null {
     }
   });
 
+  bot.command("priorizar", async (ctx) => {
+    const profile = await resolveUser(ctx);
+    const goals = listActiveGoals(await services().goals.list(profile.id));
+    if (!goals.length) {
+      await ctx.reply("No tenés metas activas para priorizar.");
+      return;
+    }
+
+    const arg = (ctx.match?.toString() ?? "").trim();
+    if (!arg) {
+      const primary = pickPrimaryGoal(goals);
+      const lines = goals.map((g, i) => {
+        const star = primary && g.id === primary.id ? " ★" : "";
+        return `${i + 1}. ${g.name}${star}`;
+      });
+      const kb = new InlineKeyboard();
+      for (let i = 0; i < Math.min(goals.length, 5); i++) {
+        kb
+          .text(
+            `${i + 1}. ${goals[i].name}`.slice(0, 40),
+            `goal:primary:${goals[i].id}`,
+          )
+          .row();
+      }
+      await ctx.reply(
+        `¿Cuál priorizamos?\n${lines.join("\n")}\n\nRespondé /priorizar N o tocá un botón.`,
+        { reply_markup: kb },
+      );
+      return;
+    }
+
+    const picked = findGoalByNameOrIndex(goals, arg);
+    if (!picked) {
+      await ctx.reply("No encontré esa meta. Probá /priorizar y elegí el número.");
+      return;
+    }
+    await setPrimaryGoal(profile.id, picked.id);
+    await ctx.reply(
+      `Listo. “${picked.name}” es ahora tu meta prioritaria.\n` +
+        `/progreso, /plan y /microahorro la usan primero.`,
+    );
+  });
+
+  bot.command("eliminar", async (ctx) => {
+    const profile = await resolveUser(ctx);
+    const goals = listActiveGoals(await services().goals.list(profile.id));
+    if (!goals.length) {
+      await ctx.reply("No tenés metas activas para eliminar.");
+      return;
+    }
+
+    const arg = (ctx.match?.toString() ?? "").trim();
+    const target = arg
+      ? findGoalByNameOrIndex(goals, arg)
+      : pickPrimaryGoal(goals);
+
+    if (!target) {
+      await ctx.reply(
+        "No encontré esa meta. Usá /meta y después /eliminar nombre o número.",
+      );
+      return;
+    }
+
+    const kb = new InlineKeyboard()
+      .text("Sí, archivar", `goal:cancel:${target.id}`)
+      .text("No, dejarla", "goal:keep");
+    await ctx.reply(
+      `¿Seguro que querés archivar “${target.name}”?\n` +
+        `No borra el historial: queda cancelada y sale de las listas activas.`,
+      { reply_markup: kb },
+    );
+  });
+
+  bot.command("mercado", async (ctx) => {
+    await ctx.replyWithChatAction("typing").catch(() => undefined);
+    try {
+      const market = await getMarketContext();
+      await ctx.reply(formatMarketSummary(market));
+    } catch (err) {
+      console.error("[finora] /mercado error", err);
+      await ctx.reply(
+        "No pude armar el resumen de mercado ahora. Probá de nuevo en un rato.",
+      );
+    }
+  });
+
   bot.on("callback_query:data", async (ctx) => {
     try {
       const profile = await resolveUser(ctx);
+      const data = ctx.callbackQuery.data ?? "";
+
+      // Callbacks de metas (solo bot): no pasan por el flujo de dinero del agente.
+      if (data === "goal:keep") {
+        await ctx.reply("Ok, la meta sigue activa.");
+        return;
+      }
+      if (data.startsWith("goal:cancel:")) {
+        const goalId = data.slice("goal:cancel:".length);
+        const cancelled = await cancelGoal(profile.id, goalId);
+        await ctx.reply(
+          `Archivé “${cancelled.name}”. Ya no aparece en metas activas.\n` +
+            `Si querés otra prioritaria: /priorizar`,
+        );
+        return;
+      }
+      if (data.startsWith("goal:primary:")) {
+        const goalId = data.slice("goal:primary:".length);
+        const primary = await setPrimaryGoal(profile.id, goalId);
+        await ctx.reply(
+          `Listo. “${primary.name}” es ahora tu meta prioritaria.`,
+        );
+        return;
+      }
+
       const result = await runAgentTurn({
         userId: profile.id,
         channel: "telegram",
         text: null,
-        callbackData: ctx.callbackQuery.data,
+        callbackData: data,
         externalChatId: String(ctx.chat?.id ?? ctx.from?.id),
       });
       await sendReplies(ctx, result.replies);
