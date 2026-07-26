@@ -6,6 +6,7 @@ import { v1 } from "./routes/v1.js";
 import { ai } from "./ai/index.js";
 import {
   getBot,
+  registerTelegramWebhook,
   startTelegramPolling,
   telegramWebhookMiddleware,
 } from "./bot/telegram.js";
@@ -13,16 +14,25 @@ import { startDigestScheduler } from "./jobs/digest-scheduler.js";
 
 assertRuntimeEnv();
 
+function corsOrigins(): string[] {
+  const defaults = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+  ];
+  const web = env.webAppUrl?.replace(/\/+$/, "");
+  if (web && !defaults.includes(web)) {
+    return [...defaults, web];
+  }
+  return defaults;
+}
+
 const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ],
+    origin: corsOrigins(),
     allowHeaders: [
       "Content-Type",
       "Authorization",
@@ -73,16 +83,14 @@ serve({ fetch: app.fetch, port: env.port }, (info) => {
   console.info(`[finora] GET /health`);
 });
 
-// Start bot polling without blocking HTTP server
+// Start bot without blocking HTTP server
 void (async () => {
   try {
     getBot();
     if (env.telegramMode === "local") {
       await startTelegramPolling();
     } else if (env.telegramBotToken) {
-      console.info(
-        `[finora] Webhook mode — set Telegram webhook to ${env.publicApiUrl}/webhooks/telegram`,
-      );
+      await registerTelegramWebhook();
     }
   } catch (err) {
     console.error("[finora] Telegram bootstrap error", err);

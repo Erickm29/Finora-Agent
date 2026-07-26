@@ -253,15 +253,203 @@ function mainReplyKeyboard() {
     .text("/mercado")
     .text("/progreso")
     .row()
+    .text("/nuevameta")
     .text("/meta")
     .text("/plan")
-    .text("/priorizar")
     .row()
+    .text("/priorizar")
     .text("/microahorro")
     .text("/proteger")
+    .row()
     .text("/ayuda")
     .resized()
     .persistent();
+}
+
+type NewGoalStep = "ask_name" | "ask_amount" | "ask_months";
+
+type NewGoalDraft = {
+  step: NewGoalStep;
+  name?: string;
+  amountBobs?: number;
+  targetMonths?: number;
+};
+
+/** Drafts de /nuevameta en memoria del proceso (se pierden al reiniciar la API). */
+const newGoalDrafts = new Map<number, NewGoalDraft>();
+
+function clearNewGoalDraft(telegramUserId: number) {
+  newGoalDrafts.delete(telegramUserId);
+}
+
+function parsePositiveAmount(raw: string): number | null {
+  const cleaned = raw.trim().replace(/\s/g, "").replace(/,/g, ".");
+  const n = Number(cleaned.replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n);
+}
+
+function parseMonths(raw: string): number | null {
+  const n = Number(raw.trim().replace(/[^\d]/g, ""));
+  if (!Number.isInteger(n) || n < 1 || n > 120) return null;
+  return n;
+}
+
+/**
+ * Atajo: `/nuevameta Laptop | 8500 | 10` o `/nuevameta Laptop 8500 10`.
+ * El nombre puede tener espacios si usamos pipes; sin pipes, el último número
+ * es meses, el penúltimo monto, y el resto el nombre.
+ */
+function parseNewGoalShortcut(raw: string): {
+  name: string;
+  amountBobs: number;
+  targetMonths: number;
+} | null {
+  const text = raw.trim();
+  if (!text) return null;
+
+  if (text.includes("|")) {
+    const parts = text.split("|").map((p) => p.trim()).filter(Boolean);
+    if (parts.length < 3) return null;
+    const targetMonths = parseMonths(parts[parts.length - 1]!);
+    const amountBobs = parsePositiveAmount(parts[parts.length - 2]!);
+    const name = parts.slice(0, -2).join(" ").trim();
+    if (!name || amountBobs == null || targetMonths == null) return null;
+    return { name, amountBobs, targetMonths };
+  }
+
+  const tokens = text.split(/\s+/).filter(Boolean);
+  if (tokens.length < 3) return null;
+  const targetMonths = parseMonths(tokens[tokens.length - 1]!);
+  const amountBobs = parsePositiveAmount(tokens[tokens.length - 2]!);
+  const name = tokens.slice(0, -2).join(" ").trim();
+  if (!name || amountBobs == null || targetMonths == null) return null;
+  return { name, amountBobs, targetMonths };
+}
+
+async function createGoalAndScheduleReport(
+  ctx: Context,
+  profileId: string,
+  input: { name: string; amountBobs: number; targetMonths: number },
+) {
+  const baseMonthly = Math.max(
+    1,
+    Math.ceil(input.amountBobs / input.targetMonths),
+  );
+  const goal = await services().goals.create(profileId, {
+    name: input.name,
+    target_amount_bobs: input.amountBobs,
+    target_months: input.targetMonths,
+    base_monthly_bobs: baseMonthly,
+  });
+
+  const chatId = String(ctx.chat?.id ?? ctx.from?.id ?? "");
+  await ctx.reply(
+    `Guardé “${goal.name}”: Bs ${input.amountBobs.toLocaleString("es-BO")} en ${input.targetMonths} meses ` +
+      `(≈ Bs ${baseMonthly.toLocaleString("es-BO")}/mes).\n` +
+      "Estoy armando el informe de inversión para llegar más rápido. Te llega en unos segundos.",
+    { reply_markup: mainReplyKeyboard() },
+  );
+
+  if (!chatId) return;
+
+  getGoalAnalysisService().schedule(goal, async (analysis, analyzedGoal) => {
+    try {
+      await sendProactiveMessage(
+        chatId,
+        formatAnalysisForChat(analyzedGoal, analysis),
+      );
+    } catch (err) {
+      console.error("[finora] no se pudo enviar informe de /nuevameta", err);
+    }
+  });
+}
+
+/** Devuelve true si el mensaje fue consumido por el wizard (no pasa al agente). */
+async function handleNewGoalWizardText(
+  ctx: Context,
+  telegramUserId: number,
+  text: string,
+): Promise<boolean> {
+  const draft = newGoalDrafts.get(telegramUserId);
+  if (!draft) return false;
+
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+
+  if (/^\/?cancelar$/i.test(trimmed) || /^cancelar$/i.test(trimmed)) {
+    clearNewGoalDraft(telegramUserId);
+    await ctx.reply("Listo, cancelé la creación de la meta.", {
+      reply_markup: mainReplyKeyboard(),
+    });
+    return true;
+  }
+
+  // Si el usuario manda otro comando, abortamos el wizard.
+  if (trimmed.startsWith("/") && !trimmed.startsWith("/cancelar")) {
+    clearNewGoalDraft(telegramUserId);
+    return false;
+  }
+
+  if (draft.step === "ask_name") {
+    if (trimmed.length < 2) {
+      await ctx.reply("Necesito un nombre un poco más claro. ¿Qué meta querés?");
+      return true;
+    }
+    draft.name = trimmed.slice(0, 120);
+    draft.step = "ask_amount";
+    newGoalDrafts.set(telegramUserId, draft);
+    await ctx.reply(
+      `Meta: “${draft.name}”.\n¿Cuál es el monto objetivo en Bs? (ej. 8500)`,
+    );
+    return true;
+  }
+
+  if (draft.step === "ask_amount") {
+    const amount = parsePositiveAmount(trimmed);
+    if (amount == null) {
+      await ctx.reply("No entendí el monto. Mandame un número en Bs, ej. 8500.");
+      return true;
+    }
+    draft.amountBobs = amount;
+    draft.step = "ask_months";
+    newGoalDrafts.set(telegramUserId, draft);
+    await ctx.reply(
+      `Monto: Bs ${amount.toLocaleString("es-BO")}.\n¿En cuántos meses querés lograrlo? (1–120)`,
+    );
+    return true;
+  }
+
+  if (draft.step === "ask_months") {
+    const months = parseMonths(trimmed);
+    if (months == null) {
+      await ctx.reply("Decime un plazo en meses entre 1 y 120 (ej. 10).");
+      return true;
+    }
+    const name = draft.name;
+    const amountBobs = draft.amountBobs;
+    clearNewGoalDraft(telegramUserId);
+    if (!name || amountBobs == null) {
+      await ctx.reply("Se me perdió el borrador. Probá de nuevo con /nuevameta.");
+      return true;
+    }
+    const profile = await resolveUser(ctx);
+    try {
+      await createGoalAndScheduleReport(ctx, profile.id, {
+        name,
+        amountBobs,
+        targetMonths: months,
+      });
+    } catch (err) {
+      console.error("[finora] /nuevameta create error", err);
+      await ctx.reply(userFacingError(err), {
+        reply_markup: mainReplyKeyboard(),
+      });
+    }
+    return true;
+  }
+
+  return false;
 }
 
 function defaultMicrosavingAmount(baseMonthlyBobs: number): number {
@@ -408,7 +596,8 @@ export function getBot(): Bot | null {
     await resolveUser(ctx);
     await ctx.reply(
       "Hola, soy Finora — tu mentor financiero en Bolivia (Bs).\n" +
-        "Contame tu meta o usá el teclado / los comandos: /saldo, /mercado, /progreso, /ayuda.",
+        "Tocá /nuevameta para crear una meta y recibir un informe de inversión, " +
+        "o usá el teclado: /saldo, /mercado, /progreso, /ayuda.",
       { reply_markup: mainReplyKeyboard() },
     );
   });
@@ -417,6 +606,8 @@ export function getBot(): Bot | null {
     await ctx.reply(
       "Comandos:\n" +
         "/start — comenzar\n" +
+        "/nuevameta — crear meta + informe de inversión\n" +
+        "/cancelar — abortar el wizard de nueva meta\n" +
         "/saldo — saldo / posiciones Wallbit\n" +
         "/accion TICKER — cotización (ej. /accion NVDA)\n" +
         "/precio TICKER — alias de /accion\n" +
@@ -433,6 +624,51 @@ export function getBot(): Bot | null {
         "Nada de dinero se mueve sin tu OK.",
       { reply_markup: mainReplyKeyboard() },
     );
+  });
+
+  bot.command("nuevameta", async (ctx) => {
+    try {
+      const profile = await resolveUser(ctx);
+      const tgId = ctx.from?.id;
+      if (!tgId) return;
+
+      const shortcut = parseNewGoalShortcut(ctx.match?.toString() ?? "");
+      if (shortcut) {
+        clearNewGoalDraft(tgId);
+        await createGoalAndScheduleReport(ctx, profile.id, shortcut);
+        return;
+      }
+
+      newGoalDrafts.set(tgId, { step: "ask_name" });
+      await ctx.reply(
+        "Vamos a crear una meta.\n" +
+          "Decime qué querés lograr. Después te armo un informe de en qué conviene apoyarte " +
+          "para llegar más rápido (siempre con tu confirmación si hay que mover plata).\n\n" +
+          "Ejemplo: laptop, viaje a Santa Cruz, fondo de emergencia.\n" +
+          "Atajo: /nuevameta Laptop 8500 10\n" +
+          "Para abortar: /cancelar",
+        { reply_markup: mainReplyKeyboard() },
+      );
+    } catch (err) {
+      console.error("[finora] /nuevameta error", err);
+      await ctx.reply(userFacingError(err), {
+        reply_markup: mainReplyKeyboard(),
+      });
+    }
+  });
+
+  bot.command("cancelar", async (ctx) => {
+    const tgId = ctx.from?.id;
+    if (tgId && newGoalDrafts.has(tgId)) {
+      clearNewGoalDraft(tgId);
+      await ctx.reply("Listo, cancelé la creación de la meta.", {
+        reply_markup: mainReplyKeyboard(),
+      });
+      return;
+    }
+    await ctx.reply("No hay un wizard de meta en curso.", {
+      reply_markup: mainReplyKeyboard(),
+    });
   });
 
   bot.command("saldo", async (ctx) => {
@@ -743,14 +979,39 @@ export function getBot(): Bot | null {
   });
 
   bot.on("message:text", async (ctx) => {
-    if (ctx.message.text.startsWith("/")) return;
+    const text = ctx.message.text;
+    const tgId = ctx.from?.id;
+
+    // Wizard /nuevameta: textos libres (los /comandos los atienden sus handlers).
+    if (tgId && newGoalDrafts.has(tgId)) {
+      if (text.startsWith("/")) {
+        // Otro comando aborta el borrador; /cancelar lo limpia su propio handler.
+        if (!/^\/cancelar(?:@\w+)?\b/i.test(text)) {
+          clearNewGoalDraft(tgId);
+        }
+        return;
+      }
+      try {
+        const handled = await handleNewGoalWizardText(ctx, tgId, text);
+        if (handled) return;
+      } catch (err) {
+        console.error("[finora] wizard nuevameta error", err);
+        clearNewGoalDraft(tgId);
+        await ctx.reply(userFacingError(err), {
+          reply_markup: mainReplyKeyboard(),
+        });
+        return;
+      }
+    }
+
+    if (text.startsWith("/")) return;
     try {
       await ctx.replyWithChatAction("typing").catch(() => undefined);
       const profile = await resolveUser(ctx);
       const result = await runAgentTurn({
         userId: profile.id,
         channel: "telegram",
-        text: ctx.message.text,
+        text,
         externalChatId: String(ctx.chat.id),
       });
       await sendReplies(ctx, result.replies);
@@ -768,6 +1029,40 @@ export function telegramWebhookMiddleware() {
   const b = getBot();
   if (!b) return null;
   return webhookCallback(b, "hono");
+}
+
+/**
+ * Registra el webhook en Telegram (producción / Render).
+ * URL: `${PUBLIC_API_URL}/webhooks/telegram` + secret opcional.
+ */
+export async function registerTelegramWebhook(): Promise<void> {
+  if (env.telegramMode !== "webhook") return;
+  const b = getBot();
+  if (!b) {
+    console.info("[finora] TELEGRAM_BOT_TOKEN vacío — webhook no registrado.");
+    return;
+  }
+
+  const base = env.publicApiUrl.replace(/\/+$/, "");
+  if (!base || base.includes("localhost") || base.includes("127.0.0.1")) {
+    console.warn(
+      "[finora] PUBLIC_API_URL parece local — no registro webhook. " +
+        `Valor actual: ${base || "(vacío)"}`,
+    );
+    return;
+  }
+
+  const url = `${base}/webhooks/telegram`;
+  try {
+    await b.api.setWebhook(url, {
+      secret_token: env.telegramWebhookSecret || undefined,
+      drop_pending_updates: false,
+    });
+    console.info(`[finora] Telegram webhook registrado: ${url}`);
+  } catch (err) {
+    console.error("[finora] falló setWebhook", err);
+    throw err;
+  }
 }
 
 export async function startTelegramPolling() {

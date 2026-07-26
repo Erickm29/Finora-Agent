@@ -1,0 +1,51 @@
+# Finora API — Web Service en Render (Free o Starter).
+# Dashboard: desplegar apps/web por separado en Vercel (ver docs/context/deploy.md).
+#
+# Blueprint: New → Blueprint → este repo, o New → Web Service manual con los mismos comandos.
+
+services:
+  - type: web
+    name: finora-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: .
+    buildCommand: npm install && npm run build:packages && npm run build -w @finora/api
+    startCommand: npm run start -w @finora/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TELEGRAM_MODE
+        value: webhook
+      - key: USE_MEMORY_STORE
+        value: "false"
+      # Completar en el dashboard de Render (no commitear secretos):
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: WEB_APP_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: EXA_API_KEY
+        sync: false
+      - key: WALLBIT_API_KEY
+        sync: false
+      - key: WALLBIT_API_URL
+        value: https://api.wallbit.io

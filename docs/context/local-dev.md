@@ -70,4 +70,8 @@ Nota: en memoria, web y Telegram no comparten el mismo user id salvo que copies 
 
 ## Spec
 
-Ver `docs/context/architecture.md`, `data-model.md`, `api.md`, `domain.md`.
+Ver también [local-dev.md](local-dev.md) y [`.env.example`](../../.env.example).
+
+## Deploy (Vercel + Render)
+
+Guía completa: [`deploy.md`](deploy.md) — dashboard en Vercel Hobby, API en Render Free/Starter.

@@ -183,6 +183,7 @@ Si Gemini responde 429 (cupo free), el bot **reintenta** y cae a mentor local si
 | [`docs/context/data-model.md`](docs/context/data-model.md) | Tablas y RLS |
 | [`docs/context/api.md`](docs/context/api.md) | Contratos REST |
 | [`docs/context/local-dev.md`](docs/context/local-dev.md) | Dev local |
+| [`docs/context/deploy.md`](docs/context/deploy.md) | Deploy: Vercel (web) + Render (API) |
 
 ---
 
