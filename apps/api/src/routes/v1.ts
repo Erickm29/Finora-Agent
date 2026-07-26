@@ -3,6 +3,7 @@ import { FinoraError, CreateGoalInputSchema, PatchGoalInputSchema } from "@finor
 import { randomUUID } from "node:crypto";
 import type { InvestmentAnalysis } from "@finora/domain";
 import { getGoalAnalysisService, services } from "../container.js";
+import { getMarketContext } from "../analysis/market-context.js";
 import { runAgentTurn } from "../agent/runtime.js";
 import { getBotUsername } from "../bot/telegram.js";
 import { AgentTurnInputSchema } from "@finora/shared";
@@ -41,7 +42,9 @@ function serializeGoal(g: {
   progressRatio?: number;
   productUrl?: string | null;
   createdAt?: string;
+  metadata?: Record<string, unknown>;
 }) {
+  const metadata = g.metadata ?? {};
   return {
     id: g.id,
     name: g.name,
@@ -54,6 +57,8 @@ function serializeGoal(g: {
       g.progressRatio ??
       (g.targetAmountBobs > 0 ? g.accumulatedBobs / g.targetAmountBobs : 0),
     product_url: g.productUrl ?? null,
+    metadata,
+    is_primary: Boolean(metadata.is_primary),
     // El dashboard lo necesita para calcular si la meta va adelantada o
     // atrasada; sin esto tiene que inventar la fecha de inicio.
     created_at: g.createdAt ?? null,
@@ -118,6 +123,16 @@ v1.get("/goals", async (c) => {
   }
 });
 
+v1.get("/goals/primary", async (c) => {
+  try {
+    const g = await services().goals.getPrimary(c.get("userId"));
+    return c.json(g ? serializeGoal(g) : null);
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
 v1.get("/goals/:id", async (c) => {
   try {
     const g = await services().goals.get(c.get("userId"), c.req.param("id"));
@@ -173,6 +188,41 @@ v1.patch("/goals/:id", async (c) => {
     const body = PatchGoalInputSchema.parse(await c.req.json());
     const g = await services().goals.patch(c.get("userId"), c.req.param("id"), body);
     return c.json(serializeGoal(g));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+/** Soft-delete: status cancelled. */
+v1.post("/goals/:id/cancel", async (c) => {
+  try {
+    const g = await services().goals.cancel(c.get("userId"), c.req.param("id"));
+    return c.json(serializeGoal(g));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+/** Marca la meta como prioritaria y limpia el flag en las demás. */
+v1.post("/goals/:id/primary", async (c) => {
+  try {
+    const g = await services().goals.setPrimary(
+      c.get("userId"),
+      c.req.param("id"),
+    );
+    return c.json(serializeGoal(g));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/market/context", async (c) => {
+  try {
+    const ctx = await getMarketContext();
+    return c.json(ctx);
   } catch (err) {
     const m = mapError(err);
     return c.json(m.body, m.status as 400);

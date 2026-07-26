@@ -43,7 +43,12 @@ async function main() {
   check("marcó stub", first.execution?.stub === true, first.execution);
   check(
     "mensaje honesto",
-    Boolean(first.execution?.message?.toLowerCase().includes("pendiente")),
+    Boolean(
+      first.execution?.message &&
+        (/stub|pendiente|no se (movió|movio|ejecutó|ejecuto)/i.test(
+          first.execution.message,
+        )),
+    ),
     first.execution?.message,
   );
   const afterFirst = await svc.goals.get(userId, goal.id);

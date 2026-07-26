@@ -35,6 +35,48 @@ export class GoalsService {
     return this.repos.goals.update(userId, goalId, patch);
   }
 
+  /** Soft-delete: la meta deja de aparecer como activa. */
+  async cancel(userId: string, goalId: string) {
+    return this.patch(userId, goalId, { status: "cancelled" });
+  }
+
+  /**
+   * Marca una meta como prioritaria en metadata y limpia el flag en las demás.
+   * No toca metas ya cancelled.
+   */
+  async setPrimary(userId: string, goalId: string) {
+    const target = await this.get(userId, goalId);
+    if (target.status === "cancelled") {
+      throw new FinoraError(
+        "GOAL_CONFLICT",
+        "No se puede priorizar una meta eliminada",
+        409,
+      );
+    }
+
+    const all = await this.repos.goals.listByUser(userId);
+    for (const goal of all) {
+      if (goal.status === "cancelled") continue;
+      const meta = { ...(goal.metadata ?? {}) };
+      const shouldBePrimary = goal.id === goalId;
+      if (Boolean(meta.is_primary) === shouldBePrimary) continue;
+      if (shouldBePrimary) meta.is_primary = true;
+      else delete meta.is_primary;
+      await this.repos.goals.update(userId, goal.id, { metadata: meta });
+    }
+
+    return this.get(userId, goalId);
+  }
+
+  /** Misma regla que usan Telegram y el dashboard. */
+  async getPrimary(userId: string) {
+    const goals = await this.list(userId);
+    const active = goals.filter((g) => g.status !== "cancelled");
+    const marked = active.find((g) => Boolean(g.metadata?.is_primary));
+    if (marked) return marked;
+    return active.find((g) => g.status === "active") ?? active[0] ?? null;
+  }
+
   async transactions(userId: string, goalId: string) {
     await this.get(userId, goalId);
     return this.repos.goals.listTransactions(userId, goalId);
