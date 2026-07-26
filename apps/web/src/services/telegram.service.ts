@@ -1,6 +1,5 @@
 import type { TelegramLinkRequest, TelegramLinkStatus } from '../types'
 import {
-  mockConfirmTelegramLink,
   mockGetTelegramStatus,
   mockRequestTelegramLink,
   mockUnlinkTelegram,
@@ -14,21 +13,29 @@ interface LinkTokenResponse {
   expires_at: string
 }
 
+interface LinkStatusResponse {
+  linked: boolean
+  handle: string | null
+  telegram_user_id: number | null
+  sync_active: boolean
+}
+
 /**
- * Telegram linking goes through the API only.
- * Real endpoint today: POST /v1/account/telegram/link-token
- * status/unlink: not fully implemented server-side — graceful local fallback.
+ * Telegram linking goes through the API only. El estado es el del servidor: la
+ * vinculación la confirma el bot cuando el usuario abre el deep link, así que
+ * el cliente no puede darla por hecha.
  */
 export async function getLinkStatus(): Promise<TelegramLinkStatus> {
   if (USE_MOCKS) return mockGetTelegramStatus()
 
-  const linked = localStorage.getItem('finora_telegram_linked') === 'true'
-  const handle = localStorage.getItem('finora_telegram_handle')
+  const res = await apiRequest<LinkStatusResponse>('/account/telegram/status', {
+    method: 'GET',
+  })
   return {
-    linked,
-    handle: linked ? handle : null,
-    linkedAt: linked ? localStorage.getItem('finora_telegram_linked_at') : null,
-    syncActive: linked,
+    linked: res.linked,
+    handle: res.handle,
+    linkedAt: null,
+    syncActive: res.sync_active,
   }
 }
 
@@ -44,22 +51,10 @@ export async function requestLink(): Promise<TelegramLinkRequest> {
   }
 }
 
-/** Mock-only helper to simulate confirming inside Telegram. */
-export async function confirmLinkForDemo(handle: string): Promise<TelegramLinkStatus> {
-  if (USE_MOCKS) return mockConfirmTelegramLink(handle)
-
-  localStorage.setItem('finora_telegram_linked', 'true')
-  localStorage.setItem('finora_telegram_handle', handle)
-  localStorage.setItem('finora_telegram_linked_at', new Date().toISOString())
-  return getLinkStatus()
-}
-
 export async function unlink(): Promise<TelegramLinkStatus> {
   if (USE_MOCKS) return mockUnlinkTelegram()
 
-  localStorage.removeItem('finora_telegram_linked')
-  localStorage.removeItem('finora_telegram_handle')
-  localStorage.removeItem('finora_telegram_linked_at')
+  await apiRequest('/account/telegram/unlink', { method: 'POST' })
   return {
     linked: false,
     handle: null,

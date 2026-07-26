@@ -1,5 +1,6 @@
 import { createServiceClient } from "@finora/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { FinoraError } from "@finora/shared";
 import type {
   CreateGoalInput,
   PatchGoalInput,
@@ -368,16 +369,79 @@ class SupabaseProfilesRepo implements ProfilesRepo {
     return mapProfile(data);
   }
 
-  async linkTelegram(userId: string, telegramUserId: number) {
+  async linkTelegram(
+    userId: string,
+    telegramUserId: number,
+    displayName?: string | null,
+  ) {
     await this.ensure(userId);
+    // Función SQL: fusiona en una transacción el perfil que el bot creó para
+    // este telegram id. Un UPDATE directo chocaría con la constraint unique de
+    // profiles.telegram_user_id y dejaría las metas del bot huérfanas.
+    const { error } = await this.db.rpc("link_telegram_account", {
+      p_user_id: userId,
+      p_telegram_id: telegramUserId,
+      p_display_name: displayName ?? null,
+    });
+    if (error) throwSb(error, "profiles.linkTelegram");
+    const linked = await this.getById(userId);
+    if (!linked) {
+      throw new FinoraError(
+        "PROFILE_ERROR",
+        "No se pudo leer el perfil vinculado",
+        500,
+      );
+    }
+    return linked;
+  }
+
+  async unlinkTelegram(userId: string) {
     const { data, error } = await this.db
       .from("profiles")
-      .update({ telegram_user_id: telegramUserId })
+      .update({ telegram_user_id: null })
       .eq("id", userId)
       .select("*")
       .single();
-    if (error) throwSb(error, "profiles.linkTelegram");
+    if (error) throwSb(error, "profiles.unlinkTelegram");
     return mapProfile(data);
+  }
+
+  async createLinkToken(input: {
+    token: string;
+    userId: string;
+    expiresAt: string;
+  }) {
+    const { error } = await this.db.from("telegram_link_tokens").insert({
+      token: input.token,
+      user_id: input.userId,
+      expires_at: input.expiresAt,
+    });
+    if (error) throwSb(error, "profiles.createLinkToken");
+  }
+
+  async consumeLinkToken(token: string) {
+    const { data, error } = await this.db
+      .from("telegram_link_tokens")
+      .select("user_id, expires_at, used_at")
+      .eq("token", token)
+      .maybeSingle();
+    if (error) throwSb(error, "profiles.consumeLinkToken");
+    if (!data || data.used_at) return null;
+
+    // Se marca como usado condicionando a used_at is null: si dos updates de
+    // Telegram entran a la vez, solo uno consume el token.
+    const { data: claimed, error: claimError } = await this.db
+      .from("telegram_link_tokens")
+      .update({ used_at: new Date().toISOString() })
+      .eq("token", token)
+      .is("used_at", null)
+      .select("user_id")
+      .maybeSingle();
+    if (claimError) throwSb(claimError, "profiles.consumeLinkToken.claim");
+    if (!claimed) return null;
+
+    if (Date.parse(data.expires_at) <= Date.now()) return null;
+    return claimed.user_id as string;
   }
 }
 

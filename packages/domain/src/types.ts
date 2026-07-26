@@ -97,7 +97,23 @@ export interface ProfilesRepo {
     telegramUserId: number;
     displayName?: string | null;
   }): Promise<Profile>;
-  linkTelegram(userId: string, telegramUserId: number): Promise<Profile>;
+  /**
+   * Vincula la cuenta web con Telegram absorbiendo el perfil que el bot haya
+   * creado para ese telegram id (metas, transacciones, acciones y sesiones).
+   */
+  linkTelegram(
+    userId: string,
+    telegramUserId: number,
+    displayName?: string | null,
+  ): Promise<Profile>;
+  unlinkTelegram(userId: string): Promise<Profile>;
+  createLinkToken(input: {
+    token: string;
+    userId: string;
+    expiresAt: string;
+  }): Promise<void>;
+  /** Devuelve el userId y marca el token como usado; null si no sirve. */
+  consumeLinkToken(token: string): Promise<string | null>;
 }
 
 export type ConversationSession = {

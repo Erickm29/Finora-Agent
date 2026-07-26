@@ -13,7 +13,8 @@ import { useTelegramLink } from '../hooks/useTelegramLink'
  */
 export default function TelegramOnboardingPage() {
   const navigate = useNavigate()
-  const { status, loading, error, link, actionLoading, actionError, refetch } = useTelegramLink()
+  const { status, loading, error, link, actionLoading, actionError, awaitingTelegram, refetch } =
+    useTelegramLink()
   const [skipOpen, setSkipOpen] = useState(false)
 
   const goNext = () => navigate('/onboarding', { replace: true })
@@ -54,6 +55,7 @@ export default function TelegramOnboardingPage() {
           error={error}
           actionLoading={actionLoading}
           actionError={actionError}
+          awaitingTelegram={awaitingTelegram}
           onLink={link}
           onRetry={refetch}
         />

@@ -8,7 +8,8 @@ import { useTelegramLink } from '../../hooks/useTelegramLink'
  * Unlink requires explicit confirmation (reuses skip dialog copy adapted).
  */
 export default function TelegramSection() {
-  const { status, loading, error, link, unlink, actionLoading, actionError, refetch } = useTelegramLink()
+  const { status, loading, error, link, unlink, actionLoading, actionError, awaitingTelegram, refetch } =
+    useTelegramLink()
   const [confirmUnlink, setConfirmUnlink] = useState(false)
 
   return (
@@ -20,6 +21,7 @@ export default function TelegramSection() {
         error={error}
         actionLoading={actionLoading}
         actionError={actionError}
+        awaitingTelegram={awaitingTelegram}
         onLink={link}
         onUnlink={() => setConfirmUnlink(true)}
         onRetry={refetch}

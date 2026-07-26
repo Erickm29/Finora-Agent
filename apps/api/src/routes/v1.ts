@@ -3,6 +3,7 @@ import { FinoraError, CreateGoalInputSchema, PatchGoalInputSchema } from "@finor
 import { randomUUID } from "node:crypto";
 import { services } from "../container.js";
 import { runAgentTurn } from "../agent/runtime.js";
+import { getBotUsername } from "../bot/telegram.js";
 import { AgentTurnInputSchema } from "@finora/shared";
 
 type Variables = { userId: string };
@@ -201,24 +202,67 @@ v1.post("/actions/:id/cancel", async (c) => {
   }
 });
 
+const LINK_TOKEN_TTL_MS = 60 * 60 * 1000;
+
 v1.post("/account/telegram/link-token", async (c) => {
-  const token = randomUUID().replace(/-/g, "").slice(0, 12);
-  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-  // Memory mode: store on profile metadata via pending map
-  const userId = c.get("userId");
-  const linkStore = (globalThis as unknown as { __finoraLinks?: Map<string, string> })
-    .__finoraLinks ?? new Map<string, string>();
-  (globalThis as unknown as { __finoraLinks: Map<string, string> }).__finoraLinks =
-    linkStore;
-  linkStore.set(token, userId);
-  return c.json(
-    {
+  try {
+    const username = await getBotUsername();
+    if (!username) {
+      throw new FinoraError(
+        "TELEGRAM_UNAVAILABLE",
+        "El bot de Telegram no está configurado en este entorno.",
+        503,
+      );
+    }
+
+    const token = randomUUID().replace(/-/g, "").slice(0, 12);
+    const expiresAt = new Date(Date.now() + LINK_TOKEN_TTL_MS).toISOString();
+    const userId = c.get("userId");
+
+    await services().repos.profiles.createLinkToken({
       token,
-      deep_link: `https://t.me/FinoraBot?start=link_${token}`,
-      expires_at: expires,
-    },
-    201,
-  );
+      userId,
+      expiresAt,
+    });
+
+    return c.json(
+      {
+        token,
+        deep_link: `https://t.me/${username}?start=link_${token}`,
+        expires_at: expiresAt,
+      },
+      201,
+    );
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/account/telegram/status", async (c) => {
+  try {
+    const profile = await services().repos.profiles.getById(c.get("userId"));
+    const linked = Boolean(profile?.telegramUserId);
+    return c.json({
+      linked,
+      handle: linked ? (profile?.displayName ?? null) : null,
+      telegram_user_id: profile?.telegramUserId ?? null,
+      sync_active: linked,
+    });
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.post("/account/telegram/unlink", async (c) => {
+  try {
+    await services().repos.profiles.unlinkTelegram(c.get("userId"));
+    return c.json({ linked: false, handle: null, sync_active: false });
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
 });
 
 v1.post("/agent/turn", async (c) => {

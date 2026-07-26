@@ -158,6 +158,7 @@ export class InMemoryPendingActionsRepo implements PendingActionsRepo {
 
 export class InMemoryProfilesRepo implements ProfilesRepo {
   profiles = new Map<string, Profile>();
+  linkTokens = new Map<string, { userId: string; expiresAt: string }>();
 
   async getById(id: string) {
     return this.profiles.get(id) ?? null;
@@ -202,12 +203,56 @@ export class InMemoryProfilesRepo implements ProfilesRepo {
     return profile;
   }
 
-  async linkTelegram(userId: string, telegramUserId: number) {
-    const profile = this.profiles.get(userId);
-    if (!profile) throw new Error("profile not found");
-    const next = { ...profile, telegramUserId };
+  async linkTelegram(
+    userId: string,
+    telegramUserId: number,
+    displayName?: string | null,
+  ) {
+    const profile = await this.ensure(userId);
+    // El bot pudo haber creado un perfil aparte antes de la vinculación; en la
+    // versión Supabase se fusiona con una función SQL. Acá basta con soltar el
+    // telegram id del perfil viejo para no duplicar la referencia.
+    const botProfile = await this.getByTelegramId(telegramUserId);
+    if (botProfile && botProfile.id !== userId) {
+      this.profiles.set(botProfile.id, {
+        ...botProfile,
+        telegramUserId: null,
+      });
+    }
+    const next: Profile = {
+      ...profile,
+      telegramUserId,
+      displayName: profile.displayName ?? displayName ?? null,
+    };
     this.profiles.set(userId, next);
     return next;
+  }
+
+  async unlinkTelegram(userId: string) {
+    const profile = await this.ensure(userId);
+    const next: Profile = { ...profile, telegramUserId: null };
+    this.profiles.set(userId, next);
+    return next;
+  }
+
+  async createLinkToken(input: {
+    token: string;
+    userId: string;
+    expiresAt: string;
+  }) {
+    this.linkTokens.set(input.token, {
+      userId: input.userId,
+      expiresAt: input.expiresAt,
+    });
+  }
+
+  async consumeLinkToken(token: string) {
+    const entry = this.linkTokens.get(token);
+    if (!entry) return null;
+    // Un token es de un solo uso, expire o no.
+    this.linkTokens.delete(token);
+    if (Date.parse(entry.expiresAt) <= Date.now()) return null;
+    return entry.userId;
   }
 }
 

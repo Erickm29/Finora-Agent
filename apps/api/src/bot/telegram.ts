@@ -91,28 +91,68 @@ function keyboardFromButtons(
   return kb;
 }
 
+let cachedBotUsername: string | null = null;
+
+/**
+ * Username real del bot para armar el deep link de vinculación. Estaba
+ * hardcodeado como "FinoraBot", que apunta a otro bot y rompía el flujo.
+ */
+export async function getBotUsername(): Promise<string | null> {
+  if (env.telegramBotUsername) return env.telegramBotUsername;
+  if (cachedBotUsername) return cachedBotUsername;
+  const b = getBot();
+  if (!b) return null;
+  try {
+    const me = await b.api.getMe();
+    cachedBotUsername = me.username;
+    return cachedBotUsername;
+  } catch (err) {
+    console.error("[finora] no se pudo resolver el username del bot", err);
+    return null;
+  }
+}
+
 export function getBot(): Bot | null {
   if (!env.telegramBotToken) return null;
   if (bot) return bot;
 
   bot = new Bot(env.telegramBotToken);
 
+  // Red de seguridad: sin esto, un handler que lanza deja al usuario sin
+  // respuesta y el error solo aparece en los logs.
+  bot.catch(async ({ error, ctx }) => {
+    console.error("[finora] telegram handler error", error);
+    try {
+      await ctx.reply(userFacingError(error));
+    } catch (replyErr) {
+      console.error("[finora] no se pudo avisar del error", replyErr);
+    }
+  });
+
   bot.command("start", async (ctx) => {
     const payload = ctx.match?.toString() ?? "";
     if (payload.startsWith("link_")) {
       const token = payload.slice("link_".length);
-      const linkStore = (globalThis as unknown as { __finoraLinks?: Map<string, string> })
-        .__finoraLinks;
-      const userId = linkStore?.get(token);
-      if (userId && ctx.from) {
-        await services().repos.profiles.linkTelegram(userId, ctx.from.id);
-        linkStore?.delete(token);
-        await ctx.reply("Cuenta vinculada. Ya podés ver tus metas en el dashboard.");
+      const userId = ctx.from
+        ? await services().repos.profiles.consumeLinkToken(token)
+        : null;
+
+      if (!userId || !ctx.from) {
+        // Sin este aviso el usuario cree que vinculó y queda en un perfil aparte.
+        await ctx.reply(
+          "Ese enlace de vinculación no es válido, ya se usó o expiró. Generá uno nuevo desde el dashboard.",
+        );
         return;
       }
-      // Sin este aviso el usuario cree que vinculó y queda en un perfil aparte.
+
+      const handle = ctx.from.username
+        ? `@${ctx.from.username}`
+        : (ctx.from.first_name ?? null);
+      // Absorbe el perfil que el bot haya creado antes de vincular, así las
+      // metas que ya existían en el chat aparecen en el dashboard.
+      await services().repos.profiles.linkTelegram(userId, ctx.from.id, handle);
       await ctx.reply(
-        "Ese enlace de vinculación no es válido o ya expiró. Generá uno nuevo desde el dashboard.",
+        "Cuenta vinculada. Tus metas de este chat y las del dashboard son ahora la misma cuenta.",
       );
       return;
     }

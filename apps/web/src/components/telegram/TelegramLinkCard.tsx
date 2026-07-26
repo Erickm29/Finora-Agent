@@ -10,6 +10,8 @@ interface TelegramLinkCardProps {
   error: string | null
   actionLoading: boolean
   actionError: string | null
+  /** El deep link ya se abrió y se está esperando el "Start" en Telegram. */
+  awaitingTelegram?: boolean
   onLink: () => void
   onUnlink?: () => void
   onRetry?: () => void
@@ -36,6 +38,7 @@ export default function TelegramLinkCard({
   error,
   actionLoading,
   actionError,
+  awaitingTelegram = false,
   onLink,
   onUnlink,
   onRetry,
@@ -100,13 +103,19 @@ export default function TelegramLinkCard({
           </div>
         )}
 
+        {!linked && awaitingTelegram && (
+          <p className="text-label-md font-label-md text-on-surface-variant">
+            Abrí el chat con el bot y tocá <strong>Start</strong>. Esperando la confirmación...
+          </p>
+        )}
+
         {actionError && <p className="text-error text-label-sm font-label-sm">{actionError}</p>}
       </div>
 
       <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3">
         {!linked ? (
-          <Button onClick={onLink} loading={actionLoading} type="button">
-            Vincular Telegram
+          <Button onClick={onLink} loading={actionLoading || awaitingTelegram} type="button">
+            {awaitingTelegram ? 'Esperando Telegram...' : 'Vincular Telegram'}
           </Button>
         ) : (
           onUnlink && (
