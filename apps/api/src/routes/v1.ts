@@ -222,15 +222,19 @@ v1.get("/actions/pending", async (c) => {
 
 v1.post("/actions/:id/confirm", async (c) => {
   try {
-    const action = await services().pendingActions.confirm(
-      c.get("userId"),
-      c.req.param("id"),
-    );
+    const { action, idempotent, execution } =
+      await services().pendingActions.confirm(
+        c.get("userId"),
+        c.req.param("id"),
+      );
     return c.json({
       id: action.id,
       status: action.status,
       confirmed_at: action.confirmedAt,
-      result: {},
+      idempotent: Boolean(idempotent),
+      result: execution?.result ?? {},
+      stub: Boolean(execution?.stub),
+      message: execution?.message ?? null,
     });
   } catch (err) {
     const m = mapError(err);

@@ -14,7 +14,7 @@ export function createWallbitClient() {
             stub: true,
             provider: "wallbit",
             message:
-              "Wallbit aún no está conectado (sin cuenta/fondos). La confirmación quedó registrada; la conversión real se habilita cuando haya API.",
+              "Preparación confirmada; la conversión real queda pendiente de cuenta Wallbit. No se movió dinero.",
             payload,
           },
         };

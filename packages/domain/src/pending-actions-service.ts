@@ -10,6 +10,18 @@ function expiresInHours(hours: number): string {
   return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
+export type ConfirmResult = {
+  action: PendingAction;
+  /** True si ya estaba resuelta: no se reaplicó el efecto. */
+  idempotent?: boolean;
+  /** Detalle de Wallbit (stub o execute real). */
+  execution?: {
+    stub?: boolean;
+    message?: string;
+    result?: Record<string, unknown>;
+  };
+};
+
 export class PendingActionsService {
   constructor(private readonly repos: DomainRepos) {}
 
@@ -54,11 +66,17 @@ export class PendingActionsService {
     });
   }
 
-  async confirm(userId: string, actionId: string) {
+  async confirm(userId: string, actionId: string): Promise<ConfirmResult> {
     const action = await this.repos.pendingActions.getById(userId, actionId);
     if (!action) {
       throw new FinoraError("ACTION_NOT_FOUND", "Acción no encontrada", 404);
     }
+
+    // Idempotente: confirmar dos veces no vuelve a mover dinero ni a llamar Wallbit.
+    if (action.status === "confirmed" || action.status === "cancelled") {
+      return { action, idempotent: true };
+    }
+
     if (action.status !== "pending") {
       throw new FinoraError(
         "ACTION_CONFLICT",
@@ -75,6 +93,8 @@ export class PendingActionsService {
       );
     }
 
+    let execution: ConfirmResult["execution"];
+
     if (action.kind === "apply_microsaving") {
       await this.applyMicrosaving(action);
     } else if (action.kind === "confirm_withdrawal") {
@@ -89,20 +109,36 @@ export class PendingActionsService {
           502,
         );
       }
+      const result = exec.result ?? {};
+      const stub = Boolean(result.stub);
+      execution = {
+        stub,
+        message:
+          typeof result.message === "string"
+            ? result.message
+            : stub
+              ? "Preparación confirmada; la conversión real queda pendiente de cuenta Wallbit."
+              : undefined,
+        result,
+      };
     }
 
-    return this.repos.pendingActions.updateStatus(
+    const confirmed = await this.repos.pendingActions.updateStatus(
       userId,
       actionId,
       "confirmed",
       new Date().toISOString(),
     );
+    return { action: confirmed, execution };
   }
 
   async cancel(userId: string, actionId: string) {
     const action = await this.repos.pendingActions.getById(userId, actionId);
     if (!action) {
       throw new FinoraError("ACTION_NOT_FOUND", "Acción no encontrada", 404);
+    }
+    if (action.status === "cancelled" || action.status === "confirmed") {
+      return action;
     }
     if (action.status !== "pending") {
       throw new FinoraError(

@@ -45,6 +45,36 @@ describe("PendingActionsService", () => {
     const updated = await goals.get(userId, goal.id);
     assert.equal(updated.accumulatedBobs, 200);
     assert.equal(updated.progressRatio, 200 / 8500);
+
+    // Segunda confirmación: no debe duplicar el aporte.
+    const second = await pending.confirm(userId, action.id);
+    assert.equal(second.idempotent, true);
+    const still = await goals.get(userId, goal.id);
+    assert.equal(still.accumulatedBobs, 200);
+  });
+
+  it("wallbit confirm reports stub without moving goal balance", async () => {
+    const repos = createInMemoryRepos();
+    const goals = new GoalsService(repos);
+    const pending = new PendingActionsService(repos);
+    const userId = "44444444-4444-4444-4444-444444444444";
+    const goal = await goals.create(userId, {
+      name: "Fondo",
+      target_amount_bobs: 3000,
+      target_months: 3,
+      base_monthly_bobs: 1000,
+    });
+    const action = await pending.prepareWallbitConvert({
+      userId,
+      goalId: goal.id,
+      amountBobs: 500,
+      channel: "telegram",
+    });
+    const result = await pending.confirm(userId, action.id);
+    assert.equal(result.action.status, "confirmed");
+    assert.equal(result.execution?.stub, true);
+    const still = await goals.get(userId, goal.id);
+    assert.equal(still.accumulatedBobs, 0);
   });
 
   it("cancels pending action without changing balance", async () => {
