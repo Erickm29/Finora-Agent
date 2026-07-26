@@ -1,5 +1,5 @@
 ---
-description: Integraciones Finora — OpenAI, Firecrawl, Exa, Wallbit, Zavu, ElevenLabs, Supabase
+description: Integraciones Finora — Gemini, Firecrawl, Exa, Wallbit, Telegram/grammY, Zavu, ElevenLabs, Supabase
 alwaysApply: false
 ---
 
@@ -9,19 +9,24 @@ Usar esta regla al tocar APIs, clientes HTTP, webhooks o persistencia.
 
 | Servicio | Uso en Finora |
 |----------|----------------|
-| OpenAI | Cerebro conversacional y razonamiento del agente |
+| Gemini (Google AI) | Proveedor LLM (HA layer; también Groq / OpenRouter) |
+| Groq | Proveedor LLM primario recomendado (failover HA) |
+| OpenRouter | Proveedor LLM de respaldo (failover HA) |
+| grammY + Telegram Bot API | Canal conversacional principal |
+| Next.js (web) | Dashboard: metas, progreso, confirmaciones |
 | Firecrawl | Precios reales de productos en la web |
-| Exa | Macroeconomía, noticias, contexto de mercado |
+| Exa | Macroeconomía, noticias, contexto de mercado (BO) |
 | Wallbit | Patrimonio y preparación de conversión a divisas estables |
-| Zavu | Recordatorios y alertas (principalmente Telegram) |
+| Zavu | Opcional / secundario: push multi-canal |
 | ElevenLabs | Resúmenes financieros por voz |
-| Supabase | Metas, progreso, historial de transacciones |
+| Supabase | Metas, progreso, historial, sesiones, pending_actions |
 
 ## Convenciones
 
 - Credenciales solo vía variables de entorno (`.env`); nunca en código
-- Wallbit: preparar operación y esperar confirmación del usuario
+- Wallbit: preparar → `pending_actions` → esperar confirmación (Telegram o web); nunca execute desde el LLM solo
 - Firecrawl/Exa: no inventar datos de mercado si la API falla; degradar con mensaje claro
-- Supabase: modelar metas, aportes, retiros e historial de forma auditable
+- Supabase: modelar metas, aportes, retiros e historial de forma auditable; service role solo en API
+- Bs = pesos bolivianos (BOB), no bolívares
 
-Detalle de flujo: `docs/context/architecture.md`
+Detalle: `docs/context/architecture.md`, `docs/context/data-model.md`, `docs/context/api.md`

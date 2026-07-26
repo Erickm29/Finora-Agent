@@ -14,15 +14,22 @@ Finora es un **mentor financiero activo**, no una calculadora de ahorro ni un ba
 3. Guardrails informativos (impacto temporal), sin quitar control
 4. Acciones preparadas (p. ej. Wallbit) que **requieren confirmación humana**
 
+## Canales
+
+- **Telegram** (grammY): chat principal con el agente
+- **Web**: dashboard (metas, progreso, confirmar Wallbit) — no chat LLM en MVP
+- **Zavu**: opcional / secundario
+
 ## Comportamiento al escribir código o copy
 
 - Preparar operaciones; nunca ejecutar dinero sin aprobación explícita
 - Mensajes asertivos y claros; no paternalistas ni de bloqueo arbitrario
-- Ejemplos en **Bs** y contexto VE salvo otra indicación
+- Ejemplos en **Bs (pesos bolivianos, BOB)** y contexto **Bolivia** salvo otra indicación
 - Preferir sugerencias de microahorro (vuelto, % de ingreso, margen post-sueldo)
 
 ## Referencias
 
 - Producto: `docs/context/product.md`
 - Dominio / ejemplos: `docs/context/domain.md`
+- Arquitectura: `docs/context/architecture.md`
 - Entrada agente: `AGENTS.md`

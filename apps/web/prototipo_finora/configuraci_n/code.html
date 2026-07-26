@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finora Agent - Settings</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#006e71",
+                        "inverse-primary": "#8cd2dd",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#7cd9d0",
+                        "inverse-on-surface": "#eff1f1",
+                        "primary-container": "#015d67",
+                        "surface-bright": "#f8fafa",
+                        "on-secondary-fixed-variant": "#004f52",
+                        "tertiary-container": "#005f59",
+                        "tertiary-fixed": "#96f3ea",
+                        "on-surface": "#191c1d",
+                        "primary": "#00444b",
+                        "tertiary": "#004541",
+                        "surface-dim": "#d8dadb",
+                        "surface": "#f8fafa",
+                        "secondary": "#00696c",
+                        "on-primary-fixed-variant": "#004f57",
+                        "on-secondary-fixed": "#002021",
+                        "primary-fixed-dim": "#8cd2dd",
+                        "surface-container-low": "#f2f4f4",
+                        "secondary-container": "#73f2f7",
+                        "on-surface-variant": "#3f484a",
+                        "surface-container-high": "#e6e8e9",
+                        "on-background": "#191c1d",
+                        "surface-variant": "#e0e3e3",
+                        "primary-fixed": "#a8eefa",
+                        "secondary-fixed": "#76f5fa",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#56d9de",
+                        "on-primary-container": "#8ed3df",
+                        "tertiary-fixed-dim": "#79d6cd",
+                        "surface-tint": "#186872",
+                        "on-tertiary-fixed-variant": "#00504b",
+                        "background": "#f8fafa",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#00201e",
+                        "on-error-container": "#93000a",
+                        "outline": "#6f797a",
+                        "inverse-surface": "#2d3132",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#bec8ca",
+                        "on-primary-fixed": "#001f24",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eceeef",
+                        "surface-container-highest": "#e0e3e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "12px",
+                        "stack-md": "24px",
+                        "card-padding": "24px",
+                        "stack-lg": "48px",
+                        "base": "8px",
+                        "container-margin-desktop": "40px",
+                        "container-margin-mobile": "20px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 234, 235, 1);
+        }
+        .toggle-switch:checked + .toggle-bg {
+            background-color: #00696c;
+        }
+        .toggle-switch:checked + .toggle-bg .toggle-dot {
+            transform: translateX(1.25rem);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .mint-glow {
+            box-shadow: 0 0 20px rgba(135, 228, 219, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-surface">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-full w-64 fixed left-0 top-0 bg-primary dark:bg-primary border-r border-outline-variant dark:border-outline-variant shadow-sm flex flex-col h-full py-6 z-50">
+<div class="px-6 mb-8">
+<h1 class="text-headline-md font-headline-md font-extrabold text-secondary-fixed dark:text-secondary-fixed tracking-tight">Finora Agent</h1>
+<p class="text-label-md font-label-md text-on-primary-container/80">Intelligent Wealth</p>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="ads_click">ads_click</span>
+<span class="font-label-md text-label-md">Goals</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 mx-2 transition-colors hover:bg-primary-container/50" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-label-md text-label-md">Agent Chat</span>
+</a>
+<a class="flex items-center gap-3 bg-secondary-container text-on-secondary-container rounded-lg px-4 py-3 mx-2 Active: scale-95 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined active-icon" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-1 pt-6 border-t border-on-primary/10">
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 transition-colors hover:bg-primary-container/50 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 text-on-primary hover:text-secondary-fixed px-4 py-3 transition-colors hover:bg-primary-container/50 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Sign Out</span>
+</a>
+<div class="mt-4 px-2">
+<button class="w-full bg-secondary-fixed text-on-secondary-fixed font-bold py-3 rounded-xl shadow-sm hover:opacity-90 transition-opacity text-label-md">
+                    Upgrade to Pro
+                </button>
+</div>
+</div>
+</aside>
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface/80 dark:bg-surface/80 backdrop-blur-md border-b border-surface-variant/30 flex justify-between items-center h-16 px-8 shadow-sm">
+<div class="flex items-center gap-8">
+<h2 class="text-headline-sm font-headline-md font-bold text-primary dark:text-inverse-primary">Settings</h2>
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors font-label-md text-label-md" href="#">Portfolio</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors font-label-md text-label-md" href="#">Insights</a>
+<a class="text-on-surface-variant hover:text-primary px-2 transition-colors font-label-md text-label-md" href="#">History</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full text-label-md focus:ring-2 focus:ring-primary w-64 transition-all" placeholder="Search settings..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" data-icon="notifications">notifications</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="Close-up studio portrait of a confident young professional man with a friendly smile, clean-shaven, wearing a navy blue blazer over a white shirt. The background is a soft, out-of-focus modern office setting with warm ambient lighting. The overall image has a high-end, clean light-mode fintech aesthetic with natural skin tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALA5SYow-nqfV86KfMMDGrnxWMfo0Pyeo6-x1RFPrYMcp_1hkmJYXGa8ukqgWIthqXGgE5kRHtYqs46aK_eF8PDB--jwUtyLaRdcOkDWWLtd3MzWbvTouQHE4SIV5CQjbh7ZAfAnh8L3HheqSy06G-X944Mm8frWRyjRx_qe_nmI7GOm71AAdAApQgnR2SAgT-cZW0td4WqglEgm-Pl1b3EJrevSjN6-Qwj3ftIdmT38v8ZzrlCTs6oiRmanSHQ85qJeEMug2edWO_"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-10 pb-12 min-h-screen">
+<div class="max-w-5xl mx-auto space-y-stack-lg">
+<!-- Page Intro & AI Badge -->
+<div class="flex items-end justify-between">
+<div>
+<h1 class="text-display-lg font-display-lg text-primary mb-2">Configuración</h1>
+<p class="text-body-lg text-on-surface-variant max-w-xl">Gestiona tu identidad digital, seguridad de activos y las preferencias de inteligencia de Finora.</p>
+</div>
+<div class="hidden lg:flex items-center gap-4 glass-card p-4 rounded-2xl mint-glow border-primary/10">
+<div class="h-12 w-12 bg-secondary-container rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="smart_toy">smart_toy</span>
+</div>
+<div>
+<p class="text-label-sm text-secondary font-bold uppercase tracking-wider">AI Insight</p>
+<p class="text-label-md text-on-surface">"Tu seguridad es óptima."</p>
+</div>
+</div>
+</div>
+<!-- Bento Grid Settings -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Section: Perfil -->
+<section class="md:col-span-8 glass-card p-card-padding rounded-[24px] shadow-sm relative overflow-hidden">
+<div class="flex items-center gap-4 mb-8">
+<div class="p-3 bg-primary-container/10 rounded-xl text-primary">
+<span class="material-symbols-outlined" data-icon="person_filled" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-primary">Perfil Personal</h3>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-stack-md">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Nombre Completo</label>
+<input class="w-full bg-surface-container-low border border-transparent focus:border-secondary focus:ring-0 rounded-lg px-4 py-3 text-body-md transition-all" type="text" value="Alejandro Mendoza"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Correo Electrónico</label>
+<input class="w-full bg-surface-container-low border border-transparent focus:border-secondary focus:ring-0 rounded-lg px-4 py-3 text-body-md transition-all" type="email" value="a.mendoza@finora.ai"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">País de Residencia</label>
+<select class="w-full bg-surface-container-low border border-transparent focus:border-secondary focus:ring-0 rounded-lg px-4 py-3 text-body-md transition-all appearance-none">
+<option>España</option>
+<option>México</option>
+<option>Argentina</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Zona Horaria</label>
+<input class="w-full bg-surface-container-low border border-transparent focus:border-secondary focus:ring-0 rounded-lg px-4 py-3 text-body-md transition-all" type="text" value="(GMT+1) Madrid, España"/>
+</div>
+</div>
+<div class="mt-8 flex justify-end">
+<button class="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-opacity">
+                            Guardar Cambios
+                        </button>
+</div>
+</section>
+<!-- Section: Seguridad (Compact) -->
+<section class="md:col-span-4 glass-card p-card-padding rounded-[24px] shadow-sm flex flex-col">
+<div class="flex items-center gap-4 mb-6">
+<div class="p-3 bg-error-container/20 rounded-xl text-error">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-primary">Seguridad</h3>
+</div>
+<ul class="space-y-4 flex-grow">
+<li class="flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="key">key</span>
+<span class="text-label-md">Cambiar Contraseña</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</li>
+<li class="flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="vibration">vibration</span>
+<span class="text-label-md">2FA (Activado)</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</li>
+<li class="flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="devices">devices</span>
+<span class="text-label-md">Sesiones Activas</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</li>
+</ul>
+<div class="mt-6 p-4 bg-tertiary-fixed/20 rounded-xl border border-tertiary-fixed-dim/30">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-tertiary text-[18px]" data-icon="security_update_good">security_update_good</span>
+<span class="text-label-sm font-bold text-tertiary">Último acceso</span>
+</div>
+<p class="text-[12px] text-on-tertiary-fixed-variant">Hoy, 10:24 AM desde Madrid (MacBook Pro)</p>
+</div>
+</section>
+<!-- Section: Conexión con Telegram (Wide) -->
+<section class="md:col-span-12 glass-card p-card-padding rounded-[24px] shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center gap-8 border-l-4 border-l-secondary-container">
+<div class="flex-shrink-0 w-24 h-24 bg-[#26A5E4]/10 rounded-full flex items-center justify-center">
+<svg class="w-12 h-12 text-[#26A5E4]" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.35-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.89.03-.24.37-.48 1.01-.73 3.96-1.72 6.59-2.85 7.91-3.4.63-.26 1.25-.43 1.86-.42.2 0 .44.05.63.15.18.09.34.25.43.46.12.28.14.6.09.89z"></path>
+</svg>
+</div>
+<div class="flex-grow text-center md:text-left">
+<h3 class="text-headline-md font-headline-md text-primary flex items-center justify-center md:justify-start gap-3">
+                            Conexión con Telegram
+                            <span class="inline-flex items-center rounded-full bg-secondary-container px-2 py-0.5 text-label-sm font-bold text-on-secondary-container">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary mr-1.5 animate-pulse"></span>
+                                Conectado
+                            </span>
+</h3>
+<p class="text-body-md text-on-surface-variant mt-2">Recibe alertas en tiempo real, ejecuta comandos rápidos y consulta tu balance directamente desde tu chat privado de Telegram con Finora Agent.</p>
+<div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
+<span class="text-label-md text-on-surface bg-surface-container-high px-3 py-1 rounded-full">ID: @ale_finora_bot</span>
+<span class="text-label-md text-on-surface bg-surface-container-high px-3 py-1 rounded-full">Sincronización: Activa</span>
+</div>
+</div>
+<div class="flex-shrink-0 flex gap-3">
+<button class="px-6 py-2.5 bg-secondary-container text-on-secondary-container font-bold rounded-lg hover:bg-secondary-container/80 transition-colors">
+                            Refrescar Token
+                        </button>
+<button class="px-6 py-2.5 border border-error text-error font-bold rounded-lg hover:bg-error/5 transition-colors">
+                            Desvincular
+                        </button>
+</div>
+</section>
+<!-- Section: Preferencias de Alertas -->
+<section class="md:col-span-12 glass-card p-card-padding rounded-[24px] shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="p-3 bg-secondary-container/20 rounded-xl text-secondary">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-primary">Preferencias de Alertas</h3>
+</div>
+<button class="text-primary font-bold text-label-md hover:underline">Restaurar valores</button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+<!-- Alert Item 1 -->
+<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
+<div>
+<h4 class="font-bold text-on-surface">Volatilidad Extrema</h4>
+<p class="text-label-md text-on-surface-variant">Notificar cuando un activo del portfolio varíe &gt;5% en 1h.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-switch" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full toggle-bg transition-colors relative">
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform toggle-dot shadow-sm"></div>
+</div>
+</label>
+</div>
+<!-- Alert Item 2 -->
+<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
+<div>
+<h4 class="font-bold text-on-surface">Resumen Diario de IA</h4>
+<p class="text-label-md text-on-surface-variant">Recibe un análisis predictivo cada mañana a las 8:00 AM.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-switch" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full toggle-bg transition-colors relative">
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform toggle-dot shadow-sm"></div>
+</div>
+</label>
+</div>
+<!-- Alert Item 3 -->
+<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
+<div>
+<h4 class="font-bold text-on-surface">Alertas de Liquidación</h4>
+<p class="text-label-md text-on-surface-variant">Aviso crítico cuando el margen de garantía sea inferior al 20%.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-switch" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full toggle-bg transition-colors relative">
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform toggle-dot shadow-sm"></div>
+</div>
+</label>
+</div>
+<!-- Alert Item 4 -->
+<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
+<div>
+<h4 class="font-bold text-on-surface">Nuevos Objetivos Alcanzables</h4>
+<p class="text-label-md text-on-surface-variant">La IA sugiere nuevos hitos basados en tus ahorros actuales.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only toggle-switch" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full toggle-bg transition-colors relative">
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform toggle-dot shadow-sm"></div>
+</div>
+</label>
+</div>
+</div>
+</section>
+</div>
+<!-- Danger Zone -->
+<div class="p-card-padding border-2 border-error/10 bg-error-container/5 rounded-[24px]">
+<h3 class="text-headline-md font-headline-md text-error mb-4">Zona de Peligro</h3>
+<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+<p class="text-body-md text-on-surface-variant">Al desactivar tu cuenta, perderás el acceso a todos tus históricos de inversión y la configuración del Agente de IA. Esta acción es irreversible.</p>
+<button class="whitespace-nowrap px-8 py-3 bg-error text-on-error font-bold rounded-xl hover:opacity-90 transition-opacity">
+                        Eliminar Cuenta Finora
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interactions for toggles
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const parent = this.closest('label');
+                if (this.checked) {
+                    console.log('Feature enabled');
+                } else {
+                    console.log('Feature disabled');
+                }
+            });
+        });
+
+        // Search highlight effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.classList.add('w-80');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.classList.remove('w-80');
+        });
+    </script>
+</body></html>

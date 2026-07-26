@@ -1,0 +1,160 @@
+/*
+  Finora Agent — tema claro pastel + jerarquía de superficies.
+  Canales RGB para opacity de Tailwind (bg-primary/10, etc.).
+
+  Niveles:
+    0 — page (background / surface)
+    1 — tarjeta (surface-container-lowest)
+    2 — protagonista (brand)
+*/
+
+:root {
+  color-scheme: light;
+
+  /* Paleta fija */
+  --color-brand: 20 20 20; /* Negro carbón #141414 — chrome + héroe */
+  --color-brand-deep: 10 10 10;
+  --color-bone: 250 250 248; /* Blanco cálido #FAFAF8 — texto sobre oscuro */
+  --color-cta: 185 245 198; /* Verde menta #B9F5C6 — positivo / CTA */
+  --color-premium: 203 184 247; /* Lavanda #CBB8F7 */
+  --color-alert: 247 108 94; /* Coral #F76C5E — solo errores */
+  --color-decor: 203 184 247; /* Lavanda decorativo */
+
+  /* Texto / énfasis */
+  --color-primary: 20 20 20;
+  --color-on-primary: 250 250 248;
+  --color-primary-container: 203 184 247;
+  --color-on-primary-container: 20 20 20;
+  --color-inverse-primary: 185 245 198;
+
+  --color-secondary: 185 245 198;
+  --color-on-secondary: 20 20 20;
+  --color-secondary-container: 185 245 198;
+  --color-on-secondary-container: 20 20 20;
+
+  --color-tertiary: 203 184 247;
+  --color-on-tertiary: 20 20 20;
+  --color-tertiary-container: 203 184 247;
+  --color-on-tertiary-container: 20 20 20;
+
+  --color-error: 247 108 94;
+  --color-on-error: 250 250 248;
+  --color-error-container: 255 228 224;
+  --color-on-error-container: 120 30 24;
+
+  /* Nivel 0 — página */
+  --color-background: 228 231 222; /* #E4E7DE */
+  --color-on-background: 20 20 20;
+  --color-surface: 228 231 222;
+  --color-on-surface: 20 20 20;
+  --color-on-surface-variant: 80 84 76;
+  --color-surface-variant: 214 218 208;
+  --color-surface-dim: 214 218 208;
+  --color-surface-bright: 250 250 248;
+
+  /* Nivel 1 — tarjetas / inputs (siempre más claros y distintos del fondo) */
+  --color-surface-container-lowest: 250 250 248; /* tarjeta #FAFAF8 */
+  --color-surface-container-low: 243 244 239; /* inputs — entre página y tarjeta */
+  --color-surface-container: 236 238 232;
+  --color-surface-container-high: 220 224 214;
+  --color-surface-container-highest: 200 206 192;
+  --color-surface-tint: 185 245 198;
+
+  --color-outline: 120 124 114;
+  --color-outline-variant: 200 204 192;
+  --color-inverse-surface: 20 20 20;
+  --color-inverse-on-surface: 250 250 248;
+
+  --color-primary-fixed: 185 245 198;
+  --color-primary-fixed-dim: 150 220 170;
+  --color-on-primary-fixed: 20 20 20;
+  --color-on-primary-fixed-variant: 20 20 20;
+  --color-secondary-fixed: 203 184 247;
+  --color-secondary-fixed-dim: 170 150 220;
+  --color-on-secondary-fixed: 20 20 20;
+  --color-on-secondary-fixed-variant: 20 20 20;
+  --color-tertiary-fixed: 203 184 247;
+  --color-tertiary-fixed-dim: 170 150 220;
+  --color-on-tertiary-fixed: 20 20 20;
+  --color-on-tertiary-fixed-variant: 20 20 20;
+
+  --color-kelly-green: 185 245 198;
+  --color-mint: 185 245 198;
+  --color-pistachio: 210 245 218;
+  --color-forest-green: 20 20 20;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Jerarquía invertida: página = carbón; tarjetas más claras */
+  --color-brand: 42 42 42; /* #2A2A2A — protagonista / chrome */
+  --color-brand-deep: 20 20 20;
+  --color-bone: 250 250 248;
+  --color-cta: 185 245 198;
+  --color-premium: 203 184 247;
+  --color-alert: 247 108 94;
+  --color-decor: 203 184 247;
+
+  --color-primary: 250 250 248;
+  --color-on-primary: 20 20 20;
+  --color-primary-container: 203 184 247;
+  --color-on-primary-container: 20 20 20;
+  --color-inverse-primary: 185 245 198;
+
+  --color-secondary: 185 245 198;
+  --color-on-secondary: 20 20 20;
+  --color-secondary-container: 48 56 50;
+  --color-on-secondary-container: 185 245 198;
+
+  --color-tertiary: 203 184 247;
+  --color-on-tertiary: 20 20 20;
+  --color-tertiary-container: 48 42 64;
+  --color-on-tertiary-container: 203 184 247;
+
+  --color-error: 247 108 94;
+  --color-on-error: 250 250 248;
+  --color-error-container: 64 28 26;
+  --color-on-error-container: 255 200 195;
+
+  /* Nivel 0 */
+  --color-background: 20 20 20; /* #141414 */
+  --color-on-background: 250 250 248;
+  --color-surface: 20 20 20;
+  --color-on-surface: 250 250 248;
+  --color-on-surface-variant: 180 180 174;
+  --color-surface-variant: 42 42 42;
+  --color-surface-dim: 14 14 14;
+  --color-surface-bright: 42 42 42;
+
+  /* Nivel 1 — tarjetas claramente por encima del fondo */
+  --color-surface-container-lowest: 31 31 31; /* #1F1F1F */
+  --color-surface-container-low: 36 36 36; /* #242424 inputs */
+  --color-surface-container: 42 42 42;
+  --color-surface-container-high: 50 50 50;
+  --color-surface-container-highest: 58 58 58;
+  --color-surface-tint: 185 245 198;
+
+  --color-outline: 140 140 134;
+  --color-outline-variant: 58 58 58;
+  --color-inverse-surface: 250 250 248;
+  --color-inverse-on-surface: 20 20 20;
+
+  --color-primary-fixed: 48 56 50;
+  --color-primary-fixed-dim: 185 245 198;
+  --color-on-primary-fixed: 250 250 248;
+  --color-on-primary-fixed-variant: 185 245 198;
+  --color-secondary-fixed: 203 184 247;
+  --color-secondary-fixed-dim: 170 150 220;
+  --color-on-secondary-fixed: 20 20 20;
+  --color-on-secondary-fixed-variant: 250 250 248;
+  --color-tertiary-fixed: 48 42 64;
+  --color-tertiary-fixed-dim: 203 184 247;
+  --color-on-tertiary-fixed: 250 250 248;
+  --color-on-tertiary-fixed-variant: 203 184 247;
+
+  --color-kelly-green: 185 245 198;
+  --color-mint: 185 245 198;
+  --color-pistachio: 48 56 50;
+  --color-forest-green: 42 42 42;
+}

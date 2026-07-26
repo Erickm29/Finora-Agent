@@ -25,12 +25,20 @@ Actúa como **mentor financiero personal y activo**, no como app bancaria de gr�
 
 ## Características principales
 
-- Definición y estructuración de metas (precio, FX, inflación, plan a medida)
+- Definición y estructuración de metas (precio, FX, inflación, plan a medida) en contexto **Bolivia / pesos bolivianos (Bs)**
 - Microahorros automatizados (diario, vuelto, % post-ingreso)
 - Guardrails predictivos al retirar fondos de la meta
 - Monitoreo de mercado (precios, noticias, macro)
-- Protección patrimonial (p. ej. conversión a USD vía Wallbit, con un toque de aprobación)
-- Resúmenes por voz y alertas (Telegram / ElevenLabs)
+- Protección patrimonial (p. ej. conversión a USD vía Wallbit, con confirmación en Telegram o dashboard web)
+- Chat mentor en **Telegram**; dashboard web para progreso y confirmaciones
+- Resúmenes por voz (ElevenLabs) y alertas in-bot; Zavu opcional para push extra
+
+## Canales
+
+| Canal | Rol |
+|-------|-----|
+| Telegram (grammY) | Conversación principal con el agente |
+| Web (dashboard) | Metas, progreso, bandeja de confirmaciones (Wallbit / retiros) |
 
 ## Tono de marca
 
