@@ -9,6 +9,7 @@ import {
   researchMacroContext,
   researchProductPrice,
 } from "../integrations/market.js";
+import { agentTools, validateToolArgs } from "./tool-schemas.js";
 
 export type AgentReply = {
   type: "text";
@@ -18,6 +19,11 @@ export type AgentReply = {
 
 const HISTORY_LIMIT = 16;
 
+/** Presupuesto total del turno; evita que un proveedor colgado cuelgue el bot. */
+const TURN_BUDGET_MS = 45_000;
+/** Techo por llamada individual a un proveedor. */
+const PROVIDER_TIMEOUT_MS = 30_000;
+
 async function resolveSession(input: AgentTurnInput) {
   return services().repos.conversations.getOrCreateSession({
     userId: input.userId,
@@ -26,21 +32,24 @@ async function resolveSession(input: AgentTurnInput) {
   });
 }
 
-async function persistTurn(
+async function persistUserMessage(
   sessionId: string,
   userText: string | null | undefined,
+) {
+  if (!userText?.trim()) return;
+  await services().repos.conversations.appendMessages(sessionId, [
+    { role: "user", content: userText.trim() },
+  ]);
+}
+
+async function persistAssistantReplies(
+  sessionId: string,
   replies: AgentReply[],
 ) {
-  const rows: {
-    role: "user" | "assistant";
-    content: string;
-  }[] = [];
-  if (userText?.trim()) {
-    rows.push({ role: "user", content: userText.trim() });
-  }
-  for (const reply of replies) {
-    rows.push({ role: "assistant", content: reply.text });
-  }
+  const rows = replies.map((reply) => ({
+    role: "assistant" as const,
+    content: reply.text,
+  }));
   if (!rows.length) return;
   await services().repos.conversations.appendMessages(sessionId, rows);
 }
@@ -64,123 +73,15 @@ const SYSTEM_PROMPT = `Sos Finora, mentor financiero activo para Bolivia.
 Usás pesos bolivianos (Bs / BOB). Informás impacto; no bloqueás de forma paternalista.
 Nunca ejecutes dinero: solo preparás acciones que requieren confirmación humana.
 No inventes precios ni tipo de cambio si faltan datos de herramientas.
-Preferí microahorros indoloros (vuelto, % ingreso, margen post-sueldo).`;
+Preferí microahorros indoloros (vuelto, % ingreso, margen post-sueldo).
 
-const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "research_product_price",
-      description: "Investiga precio de un producto (Firecrawl o fixture local)",
-      parameters: {
-        type: "object",
-        properties: { query: { type: "string" } },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "research_macro_context",
-      description: "Contexto macro Bolivia (Exa o fixture)",
-      parameters: {
-        type: "object",
-        properties: { query: { type: "string" } },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "create_or_update_goal",
-      description: "Crea una meta de ahorro en Bs",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          target_amount_bobs: { type: "number" },
-          target_months: { type: "number" },
-          base_monthly_bobs: { type: "number" },
-        },
-        required: [
-          "name",
-          "target_amount_bobs",
-          "target_months",
-          "base_monthly_bobs",
-        ],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_active_goal",
-      description: "Lista metas del usuario",
-      parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "suggest_microsaving",
-      description: "Prepara microahorro pendiente de confirmación",
-      parameters: {
-        type: "object",
-        properties: {
-          goal_id: { type: "string" },
-          amount_bobs: { type: "number" },
-          note: { type: "string" },
-        },
-        required: ["goal_id", "amount_bobs"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "evaluate_withdrawal_guardrail",
-      description: "Calcula impacto de un retiro",
-      parameters: {
-        type: "object",
-        properties: {
-          goal_id: { type: "string" },
-          amount_bobs: { type: "number" },
-        },
-        required: ["goal_id", "amount_bobs"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "prepare_wallbit_conversion",
-      description: "Prepara conversión Wallbit (requiere confirmación)",
-      parameters: {
-        type: "object",
-        properties: {
-          goal_id: { type: "string" },
-          amount_bobs: { type: "number" },
-          to: { type: "string" },
-        },
-        required: ["amount_bobs"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "generate_voice_summary",
-      description: "Genera audio del resumen (ElevenLabs)",
-      parameters: {
-        type: "object",
-        properties: { text: { type: "string" } },
-        required: ["text"],
-      },
-    },
-  },
-];
+Reglas al usar herramientas:
+- Los montos van como número, sin comillas ni separadores de miles.
+- Nunca inventes un goal_id. Si necesitás uno y no lo tenés en esta conversación,
+  llamá primero a get_active_goal y usá el id exacto que devuelve.
+- Una acción preparada queda PENDIENTE: no digas que se aplicó, se acreditó ni que
+  fue exitosa. Decí que quedó lista y que se aplica cuando el usuario confirme.
+- El saldo acumulado de la meta no cambia hasta que el usuario confirma.`;
 
 async function runTool(
   userId: string,
@@ -191,24 +92,30 @@ async function runTool(
   const svc = services();
   switch (name) {
     case "research_product_price":
-      return researchProductPrice(String(args.query ?? ""));
+      return researchProductPrice(args.query as string);
     case "research_macro_context":
-      return researchMacroContext(String(args.query ?? ""));
-    case "create_or_update_goal":
+      return researchMacroContext(args.query as string);
+    case "create_or_update_goal": {
+      const targetAmountBobs = args.target_amount_bobs as number;
+      const targetMonths = args.target_months as number;
+      const baseMonthlyBobs =
+        (args.base_monthly_bobs as number | undefined) ??
+        Math.ceil(targetAmountBobs / targetMonths);
       return svc.goals.create(userId, {
-        name: String(args.name),
-        target_amount_bobs: Number(args.target_amount_bobs),
-        target_months: Number(args.target_months),
-        base_monthly_bobs: Number(args.base_monthly_bobs),
+        name: args.name as string,
+        target_amount_bobs: targetAmountBobs,
+        target_months: targetMonths,
+        base_monthly_bobs: baseMonthlyBobs,
       });
+    }
     case "get_active_goal":
       return svc.goals.list(userId);
     case "suggest_microsaving": {
       const action = await svc.microsavings.suggest({
         userId,
-        goalId: String(args.goal_id),
-        amountBobs: Number(args.amount_bobs),
-        note: args.note ? String(args.note) : undefined,
+        goalId: args.goal_id as string,
+        amountBobs: args.amount_bobs as number,
+        note: (args.note as string | undefined) ?? undefined,
         channel,
       });
       return {
@@ -218,16 +125,18 @@ async function runTool(
       };
     }
     case "evaluate_withdrawal_guardrail": {
+      const goalId = args.goal_id as string;
+      const amountBobs = args.amount_bobs as number;
       const evaluation = await svc.guardrails.evaluateWithdrawal({
         userId,
-        goalId: String(args.goal_id),
-        amountBobs: Number(args.amount_bobs),
+        goalId,
+        amountBobs,
       });
       const action = await svc.pendingActions.prepare({
         userId,
-        goalId: String(args.goal_id),
+        goalId,
         kind: "confirm_withdrawal",
-        payload: { amount_bobs: Number(args.amount_bobs) },
+        payload: { amount_bobs: amountBobs },
         channel,
       });
       return {
@@ -240,9 +149,9 @@ async function runTool(
     case "prepare_wallbit_conversion": {
       const action = await svc.pendingActions.prepareWallbitConvert({
         userId,
-        goalId: args.goal_id ? String(args.goal_id) : null,
-        amountBobs: Number(args.amount_bobs),
-        toCurrency: args.to ? String(args.to) : "USD",
+        goalId: (args.goal_id as string | null | undefined) ?? null,
+        amountBobs: args.amount_bobs as number,
+        toCurrency: args.to as string,
         channel,
       });
       return {
@@ -252,14 +161,116 @@ async function runTool(
         dashboardUrl: `${env.webAppUrl}/actions`,
       };
     }
-    case "generate_voice_summary":
-      return generateVoiceSummary(String(args.text ?? ""));
+    case "generate_voice_summary": {
+      const audio = await generateVoiceSummary(args.text as string);
+      if (!audio.ok) return audio;
+      // El base64 del MP3 no vuelve al contexto del LLM: son cientos de KB de
+      // tokens por ronda y puede desbordar la ventana de contexto.
+      return { ok: true, contentType: audio.contentType, bytes: audio.bytes };
+    }
     default:
-      return { error: `Unknown tool ${name}` };
+      return { error: "unknown_tool", message: `No existe la tool ${name}.` };
   }
 }
 
-/** Heuristic mentor when Gemini key is missing / rate-limited (local). */
+/**
+ * Ejecuta una tool call del modelo convirtiendo cualquier fallo en un resultado
+ * de tool. Así el turno sobrevive a JSON malformado, argumentos inválidos o
+ * errores de dominio, y el LLM recibe la información necesaria para corregirse.
+ */
+async function executeToolCall(
+  input: AgentTurnInput,
+  name: string,
+  rawArgs: string | undefined,
+): Promise<unknown> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawArgs || "{}");
+  } catch {
+    return {
+      error: "invalid_arguments",
+      message: `El JSON de argumentos de ${name} no es válido. Reintentá con JSON bien formado.`,
+    };
+  }
+
+  const validation = validateToolArgs(name, parsed);
+  if (!validation.ok) {
+    console.warn(`[finora] tool ${name} rechazada: ${validation.error}`);
+    return { error: "invalid_arguments", message: validation.error };
+  }
+
+  try {
+    return await runTool(
+      input.userId,
+      input.channel,
+      validation.name,
+      validation.args,
+    );
+  } catch (err) {
+    if (err instanceof FinoraError) {
+      return { error: err.code, message: err.message };
+    }
+    console.error(`[finora] tool ${name} falló`, err);
+    return {
+      error: "tool_failed",
+      message: `La herramienta ${name} no está disponible ahora. Seguí sin ella y avisale al usuario.`,
+    };
+  }
+}
+
+/**
+ * Los proveedores OpenAI-compatibles devuelven 400 cuando el modelo no logra
+ * emitir una tool call válida. No es un fallo de infraestructura, así que la
+ * capa de failover no reintenta: lo resolvemos acá repitiendo la llamada sin
+ * tools para que el usuario reciba siempre una respuesta en texto.
+ */
+function isToolCallRejection(err: unknown): boolean {
+  const msg = (
+    err instanceof Error ? err.message : String(err)
+  ).toLowerCase();
+  return (
+    msg.includes("tool call validation failed") ||
+    msg.includes("failed to call a function") ||
+    msg.includes("tool_use_failed")
+  );
+}
+
+function extractButtons(
+  content: string,
+  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+): AgentReply["buttons"] {
+  const buttons: { label: string; callbackData: string }[] = [];
+  const seen = new Set<string>();
+  const add = (label: string, callbackData: string) => {
+    if (seen.has(callbackData)) return;
+    seen.add(callbackData);
+    buttons.push({ label, callbackData });
+  };
+
+  for (const m of messages.slice().reverse()) {
+    if (m.role !== "tool" || typeof m.content !== "string") continue;
+    try {
+      const parsed = JSON.parse(m.content) as {
+        confirmCallback?: string;
+        cancelCallback?: string;
+      };
+      if (parsed.confirmCallback) add("Confirmar", parsed.confirmCallback);
+      if (parsed.cancelCallback) add("Cancelar", parsed.cancelCallback);
+      if (buttons.length) break;
+    } catch {
+      /* resultado de tool no serializado como objeto; se ignora */
+    }
+  }
+
+  const confirmMatch = content.match(/action:confirm:[0-9a-f-]+/i);
+  if (confirmMatch) add("Confirmar", confirmMatch[0]);
+  const cancelMatch = content.match(/action:cancel:[0-9a-f-]+/i);
+  if (cancelMatch) add("Cancelar", cancelMatch[0]);
+
+  return buttons.length ? buttons : undefined;
+}
+
+/** Heuristic mentor when no AI provider is available or every provider failed. */
 async function heuristicTurn(
   input: AgentTurnInput,
   sessionId: string,
@@ -270,21 +281,25 @@ async function heuristicTurn(
   const active = goals[0];
 
   const finish = async (replies: AgentReply[]) => {
-    await persistTurn(sessionId, input.text, replies);
+    await persistAssistantReplies(sessionId, replies);
     return { sessionId, replies };
   };
 
   if (active && /microahorro|ahorrar|aporte/.test(text)) {
     const amountMatch = text.match(/(\d+(?:[.,]\d+)?)/);
-    const amountBobs = amountMatch
+    const parsedAmount = amountMatch
       ? Number(amountMatch[1].replace(",", "."))
-      : Math.min(200, Math.ceil(active.baseMonthlyBobs * 0.2));
+      : NaN;
+    const amountBobs =
+      Number.isFinite(parsedAmount) && parsedAmount > 0
+        ? parsedAmount
+        : Math.max(1, Math.min(200, Math.ceil(active.baseMonthlyBobs * 0.2)));
     const action = await svc.microsavings.suggest({
       userId: input.userId,
       goalId: active.id,
       amountBobs,
       channel: input.channel,
-      note: "Sugerencia local (sin Gemini)",
+      note: "Sugerencia local (sin IA)",
     });
     return finish([
       {
@@ -302,9 +317,13 @@ async function heuristicTurn(
 
   if (active && /wallbit|proteger|convertir|usd/.test(text)) {
     const amountMatch = text.match(/(\d+(?:[.,]\d+)?)/);
-    const amountBobs = amountMatch
+    const parsedAmount = amountMatch
       ? Number(amountMatch[1].replace(",", "."))
-      : Math.min(500, active.accumulatedBobs || 300);
+      : NaN;
+    const amountBobs =
+      Number.isFinite(parsedAmount) && parsedAmount > 0
+        ? parsedAmount
+        : Math.max(1, Math.min(500, active.accumulatedBobs || 300));
     const action = await svc.pendingActions.prepareWallbitConvert({
       userId: input.userId,
       goalId: active.id,
@@ -431,122 +450,132 @@ export async function runAgentTurn(
     } else if (op === "cancel") {
       await svc.pendingActions.cancel(input.userId, id);
       replies = [{ type: "text", text: "Acción cancelada. Vos decidís." }];
+    } else {
+      replies = [
+        {
+          type: "text",
+          text: "No reconozco esa acción. Pedime que la prepare de nuevo.",
+        },
+      ];
     }
-    if (replies.length) {
-      await persistTurn(
-        session.id,
-        input.callbackData,
-        replies,
-      );
-      return { sessionId: session.id, replies };
-    }
+    await persistUserMessage(session.id, input.callbackData);
+    await persistAssistantReplies(session.id, replies);
+    return { sessionId: session.id, replies };
   }
 
   if (!ai.hasAnyProvider()) {
+    await persistUserMessage(session.id, input.text);
     return heuristicTurn(input, session.id);
   }
 
+  // El historial se lee antes de persistir el mensaje nuevo para no duplicarlo.
   const prior = await loadHistoryForLlm(session.id);
+  await persistUserMessage(session.id, input.text);
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...prior,
     { role: "user", content: input.text ?? "" },
   ];
 
-  const maxRounds = 4;
-  for (let i = 0; i < maxRounds; i++) {
-    let completion;
-    try {
-      completion = await ai.chat(messages, { tools });
-    } catch (err) {
-      if (err instanceof AllProvidersFailedError) {
-        throw new FinoraError(
-          "AI_PROVIDERS_FAILED",
-          `Ningún proveedor de IA respondió: ${err.message.slice(0, 280)}`,
-          502,
-        );
-      }
-      const detail = err instanceof Error ? err.message : "AI error";
-      throw new FinoraError(
-        "AI_ERROR",
-        `El proveedor de IA falló: ${detail.slice(0, 300)}`,
-        502,
-      );
-    }
-    const msg = completion.message;
-    if (!msg) break;
-
-    if (msg.tool_calls?.length) {
-      messages.push(msg);
-      for (const call of msg.tool_calls) {
-        if (call.type !== "function") continue;
-        const args = JSON.parse(call.function.arguments || "{}") as Record<
-          string,
-          unknown
-        >;
-        const result = await runTool(
-          input.userId,
-          input.channel,
-          call.function.name,
-          args,
-        );
-        messages.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: JSON.stringify(result),
-        });
-      }
-      continue;
-    }
-
-    const content =
-      typeof msg.content === "string" ? msg.content : msg.content ? JSON.stringify(msg.content) : "Listo.";
-    const buttons: AgentReply["buttons"] = [];
-    const confirmMatch = content.match(/action:confirm:[0-9a-f-]+/i);
-    const cancelMatch = content.match(/action:cancel:[0-9a-f-]+/i);
-    // Also scan last tool results in messages for callbacks
-    for (const m of messages.slice().reverse()) {
-      if (m.role === "tool" && typeof m.content === "string") {
-        try {
-          const parsed = JSON.parse(m.content) as {
-            confirmCallback?: string;
-            cancelCallback?: string;
-          };
-          if (parsed.confirmCallback) {
-            buttons.push({
-              label: "Confirmar",
-              callbackData: parsed.confirmCallback,
-            });
-          }
-          if (parsed.cancelCallback) {
-            buttons.push({
-              label: "Cancelar",
-              callbackData: parsed.cancelCallback,
-            });
-          }
-          if (buttons.length) break;
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    if (confirmMatch) {
-      buttons.push({ label: "Confirmar", callbackData: confirmMatch[0] });
-    }
-    if (cancelMatch) {
-      buttons.push({ label: "Cancelar", callbackData: cancelMatch[0] });
-    }
-
+  const finish = async (content: string) => {
     const replies: AgentReply[] = [
       {
         type: "text",
         text: content,
-        buttons: buttons.length ? buttons : undefined,
+        buttons: extractButtons(content, messages),
       },
     ];
-    await persistTurn(session.id, input.text, replies);
+    await persistAssistantReplies(session.id, replies);
     return { sessionId: session.id, replies };
-  }
+  };
 
-  throw new FinoraError("AGENT_FAILED", "El agente no pudo completar el turno", 502);
+  const deadline = Date.now() + TURN_BUDGET_MS;
+  const remainingBudget = () =>
+    Math.max(1_000, Math.min(PROVIDER_TIMEOUT_MS, deadline - Date.now()));
+
+  const maxRounds = 4;
+  let toolsEnabled = true;
+
+  try {
+    for (let round = 0; round < maxRounds; round++) {
+      let completion;
+      try {
+        completion = await ai.chat(messages, {
+          tools: toolsEnabled ? agentTools : undefined,
+          signal: AbortSignal.timeout(remainingBudget()),
+        });
+      } catch (err) {
+        if (toolsEnabled && isToolCallRejection(err)) {
+          console.warn(
+            "[finora] el proveedor rechazó la tool call; reintento sin tools",
+          );
+          toolsEnabled = false;
+          continue;
+        }
+        throw err;
+      }
+
+      const msg = completion.message;
+      if (!msg) break;
+
+      if (msg.tool_calls?.length) {
+        messages.push(msg);
+        for (const call of msg.tool_calls) {
+          if (call.type !== "function") continue;
+          const result = await executeToolCall(
+            input,
+            call.function.name,
+            call.function.arguments,
+          );
+          messages.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify(result),
+          });
+        }
+        continue;
+      }
+
+      const content =
+        typeof msg.content === "string" && msg.content.trim()
+          ? msg.content
+          : msg.content
+            ? JSON.stringify(msg.content)
+            : "Listo.";
+      return finish(content);
+    }
+
+    // Se agotaron las rondas sin respuesta en texto (o el completion vino
+    // vacío). Forzamos una última llamada sin tools para que el usuario reciba
+    // el resultado de lo que ya se preparó en este turno.
+    const closing = await ai.chat(
+      [
+        ...messages,
+        {
+          role: "user",
+          content:
+            "Resumí en español, en dos frases y sin usar herramientas, qué dejaste preparado y qué necesitás de mí.",
+        },
+      ],
+      { signal: AbortSignal.timeout(remainingBudget()) },
+    );
+    const closingText =
+      typeof closing.message.content === "string" &&
+      closing.message.content.trim()
+        ? closing.message.content
+        : "Dejé la acción preparada. Confirmala cuando quieras.";
+    return finish(closingText);
+  } catch (err) {
+    // Último recurso: mentor heurístico local. Es preferible una respuesta útil
+    // sin IA que devolverle un error al usuario en Telegram o en la web.
+    const detail =
+      err instanceof AllProvidersFailedError
+        ? `ningún proveedor respondió: ${err.message.slice(0, 280)}`
+        : err instanceof Error
+          ? err.message.slice(0, 280)
+          : "error desconocido";
+    console.error(`[finora] IA no disponible (${detail}); uso mentor heurístico`);
+    return heuristicTurn(input, session.id);
+  }
 }
