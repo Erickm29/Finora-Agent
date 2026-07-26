@@ -1,5 +1,5 @@
 import type { CreateGoalPayload, Goal, GoalCategory, GoalStatus } from '../types'
-import { mockCreateGoal, mockGetGoals } from '../mocks/goals.mock'
+import { mockCancelGoal, mockCreateGoal, mockGetGoals, mockSetPrimaryGoal } from '../mocks/goals.mock'
 import { apiRequest } from './apiClient'
 import { USE_MOCKS } from './config'
 
@@ -14,6 +14,7 @@ interface ApiGoal {
   status: string
   progress_ratio?: number
   product_url?: string | null
+  metadata?: Record<string, unknown> | null
   created_at?: string | null
 }
 
@@ -53,8 +54,53 @@ export async function createGoal(payload: CreateGoalPayload): Promise<Goal> {
   return mapApiGoal(created, payload.category)
 }
 
+/** Soft-delete: la meta pasa a `cancelled` y desaparece de las listas activas. */
+export async function cancelGoal(id: string): Promise<Goal> {
+  if (USE_MOCKS) return mockCancelGoal(id)
+  const updated = await apiRequest<ApiGoal>(`/goals/${id}`, {
+    method: 'PATCH',
+    body: { status: 'cancelled' },
+  })
+  return mapApiGoal(updated)
+}
+
+/**
+ * Marca `id` como meta prioritaria y limpia el flag en las demás. El backend
+ * mergea `metadata` en vez de sobreescribirlo (ver `GoalsService.patch`), así
+ * que estos PATCH parciales no pisan `category`/`currency` ya guardados.
+ *
+ * `currentGoals` se recibe para saber qué otras metas hay que "despriorizar"
+ * sin depender de un endpoint dedicado (fallback acordado si Track C —la capa
+ * de dominio/Wallbit— todavía no expone `GoalsService.setPrimary`).
+ */
+export async function setPrimaryGoal(currentGoals: Goal[], id: string): Promise<Goal[]> {
+  if (USE_MOCKS) return mockSetPrimaryGoal(id)
+
+  const previousPrimaries = currentGoals.filter((g) => g.isPrimary && g.id !== id)
+  await apiRequest<ApiGoal>(`/goals/${id}`, {
+    method: 'PATCH',
+    body: { metadata: { is_primary: true } },
+  })
+  await Promise.all(
+    previousPrimaries.map((g) =>
+      apiRequest<ApiGoal>(`/goals/${g.id}`, {
+        method: 'PATCH',
+        body: { metadata: { is_primary: false } },
+      }),
+    ),
+  )
+  return getGoals()
+}
+
+const GOAL_CATEGORIES: GoalCategory[] = ['buy', 'save', 'emergency', 'other']
+
+function isGoalCategory(value: unknown): value is GoalCategory {
+  return typeof value === 'string' && (GOAL_CATEGORIES as string[]).includes(value)
+}
+
 function mapApiGoal(g: ApiGoal, categoryHint?: GoalCategory): Goal {
-  const metaCategory = categoryHint ?? 'other'
+  const metadata = g.metadata ?? {}
+  const metaCategory = categoryHint ?? (isGoalCategory(metadata.category) ? metadata.category : 'other')
   const status = normalizeStatus(g.status)
   const createdAt = g.created_at ?? new Date().toISOString()
 
@@ -73,11 +119,14 @@ function mapApiGoal(g: ApiGoal, categoryHint?: GoalCategory): Goal {
     status,
     priority: 'Media',
     createdAt,
+    isPrimary: metadata.is_primary === true,
   }
 }
 
 function normalizeStatus(status: string): GoalStatus {
-  if (status === 'completed' || status === 'paused' || status === 'active') return status
+  if (status === 'completed' || status === 'paused' || status === 'active' || status === 'cancelled') {
+    return status
+  }
   return 'active'
 }
 

@@ -40,6 +40,7 @@ function serializeGoal(g: {
   status: string;
   progressRatio?: number;
   productUrl?: string | null;
+  metadata?: Record<string, unknown>;
   createdAt?: string;
 }) {
   return {
@@ -54,6 +55,9 @@ function serializeGoal(g: {
       g.progressRatio ??
       (g.targetAmountBobs > 0 ? g.accumulatedBobs / g.targetAmountBobs : 0),
     product_url: g.productUrl ?? null,
+    // El dashboard/bot lo necesitan para saber cuál es la meta prioritaria
+    // (metadata.is_primary) y su categoría original.
+    metadata: g.metadata ?? {},
     // El dashboard lo necesita para calcular si la meta va adelantada o
     // atrasada; sin esto tiene que inventar la fecha de inicio.
     created_at: g.createdAt ?? null,

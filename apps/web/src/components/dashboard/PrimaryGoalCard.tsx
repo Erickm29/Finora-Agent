@@ -4,11 +4,19 @@ import { computeGoalProgress, formatCurrency, formatDeadline } from '../../utils
 
 interface PrimaryGoalCardProps {
   goal: Goal
+  onDelete?: (goalId: string) => void
+  busy?: boolean
 }
 
-export default function PrimaryGoalCard({ goal }: PrimaryGoalCardProps) {
+export default function PrimaryGoalCard({ goal, onDelete, busy }: PrimaryGoalCardProps) {
   const { percentage, remainingAmount, projection } = computeGoalProgress(goal)
   const contributionsCount = Math.max(1, Math.round(goal.currentAmount / Math.max(1, goal.monthlySuggested)))
+
+  const handleDelete = () => {
+    if (window.confirm(`¿Eliminar "${goal.name}"? Deja de ser tu meta prioritaria y de contar como activa.`)) {
+      onDelete?.(goal.id)
+    }
+  }
 
   return (
     <section className="col-span-12 lg:col-span-7">
@@ -27,8 +35,21 @@ export default function PrimaryGoalCard({ goal }: PrimaryGoalCardProps) {
               Restan {formatCurrency(remainingAmount, goal.currency)} • Meta: {formatDeadline(goal.deadline)}
             </p>
           </div>
-          <div className="w-16 h-16 rounded-3xl bg-cta/20 backdrop-blur-md flex items-center justify-center border border-bone/20">
-            <Icon name={goal.icon} className="text-cta text-3xl" />
+          <div className="flex items-start gap-2">
+            <div className="w-16 h-16 rounded-3xl bg-cta/20 backdrop-blur-md flex items-center justify-center border border-bone/20">
+              <Icon name={goal.icon} className="text-cta text-3xl" />
+            </div>
+            {onDelete && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleDelete}
+                aria-label={`Eliminar meta ${goal.name}`}
+                className="w-9 h-9 rounded-full bg-bone/10 hover:bg-bone/20 flex items-center justify-center text-bone/70 hover:text-bone transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Icon name="delete" className="text-lg" />
+              </button>
+            )}
           </div>
         </div>
 

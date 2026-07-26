@@ -122,6 +122,23 @@ export function getGoalById(userId: string, goalId: string): Goal | undefined {
   return (goalsByUser.get(userId) ?? []).find((goal) => goal.id === goalId)
 }
 
+export function setGoalStatus(userId: string, goalId: string, status: Goal['status']) {
+  const list = goalsByUser.get(userId) ?? []
+  goalsByUser.set(
+    userId,
+    list.map((goal) => (goal.id === goalId ? { ...goal, status } : goal)),
+  )
+}
+
+/** Marca `goalId` como prioritaria y limpia el flag en el resto de las metas del usuario. */
+export function setPrimaryGoalId(userId: string, goalId: string) {
+  const list = goalsByUser.get(userId) ?? []
+  goalsByUser.set(
+    userId,
+    list.map((goal) => ({ ...goal, isPrimary: goal.id === goalId })),
+  )
+}
+
 export function addGoal(userId: string, goal: Goal) {
   const list = goalsByUser.get(userId) ?? []
   list.push(goal)

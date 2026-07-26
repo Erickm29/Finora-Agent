@@ -13,6 +13,8 @@ import AlertsPanel from '../components/dashboard/AlertsPanel'
 import MicroSavingsCard from '../components/dashboard/MicroSavingsCard'
 import CapitalDistributionCard from '../components/dashboard/CapitalDistributionCard'
 import ActivityPanel from '../components/dashboard/ActivityPanel'
+import ArchivedGoalsSection from '../components/dashboard/ArchivedGoalsSection'
+import MarketContextPanel from '../components/agent/MarketContextPanel'
 import ActionConfirmationModal from '../components/modals/ActionConfirmationModal'
 import type { ActionConfirmationData } from '../components/modals/ActionConfirmationModal'
 import InvestmentPlanCard from '../components/analysis/InvestmentPlanCard'
@@ -27,7 +29,16 @@ import TelegramBanner from '../components/telegram/TelegramBanner'
 export default function DashboardPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { data: goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = useGoals()
+  const {
+    data: goals,
+    loading: goalsLoading,
+    error: goalsError,
+    refetch: refetchGoals,
+    cancelGoal,
+    setPrimary,
+    mutatingId,
+    actionError: goalActionError,
+  } = useGoals()
   const { recommendations, loading: recsLoading, error: recsError, respond, respondingId } = useRecommendations()
   const { data: transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactions()
   const { status: telegramStatus, loading: telegramLoading } = useTelegramLink()
@@ -35,8 +46,14 @@ export default function DashboardPage() {
     recommendationId: string
     data: ActionConfirmationData
   } | null>(null)
+  // Metas eliminadas (soft-delete) no cuentan como activas en ningún cálculo del dashboard.
+  const activeGoals = (goals ?? []).filter((g) => g.status !== 'cancelled')
+  const archivedGoals = (goals ?? []).filter((g) => g.status === 'cancelled')
+  // Regla compartida con Telegram/API: is_primary marcada > primera activa > primera del listado.
+  const primaryGoal =
+    activeGoals.find((g) => g.isPrimary) ?? activeGoals.find((g) => g.status === 'active') ?? activeGoals[0]
   // Antes de los returns tempranos: los hooks no pueden llamarse condicionalmente.
-  const analysis = useGoalAnalysis(goals?.[0]?.id ?? null)
+  const analysis = useGoalAnalysis(primaryGoal?.id ?? null)
 
   // Permite que links externos (p. ej. el `dashboardUrl` que manda el bot de Telegram)
   // lleguen directo a la bandeja de acciones pendientes con `/dashboard#pending`.
@@ -64,7 +81,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!goals || goals.length === 0) {
+  if (!goals || activeGoals.length === 0) {
     return (
       <AppShellLayout title="Portfolio" searchPlaceholder="Search assets...">
         <div className="p-8 max-w-7xl mx-auto">
@@ -81,14 +98,28 @@ export default function DashboardPage() {
               </Button>
             }
           />
+          {archivedGoals.length > 0 && (
+            <ArchivedGoalsSection goals={archivedGoals} />
+          )}
         </div>
       </AppShellLayout>
     )
   }
 
-  const primaryGoal = goals[0]
-  const otherGoals = goals.slice(1)
+  const otherGoals = activeGoals.filter((goal) => goal.id !== primaryGoal.id)
   const pendingRecommendation = recommendations.find((rec) => rec.status === 'pending') ?? null
+
+  const handleSetPrimary = (goalId: string) => {
+    setPrimary(goalId).catch(() => {
+      // El error ya queda expuesto vía `goalActionError`.
+    })
+  }
+
+  const handleDeleteGoal = (goalId: string) => {
+    cancelGoal(goalId).catch(() => {
+      // El error ya queda expuesto vía `goalActionError`.
+    })
+  }
 
   /**
    * Solo abre el modal. La acción no se envía al backend hasta que el usuario
@@ -131,13 +162,18 @@ export default function DashboardPage() {
     <AppShellLayout title="Portfolio" searchPlaceholder="Search assets...">
       <div className="p-8 max-w-7xl mx-auto">
         {showTelegramBanner && <TelegramBanner />}
+        {goalActionError && (
+          <div className="mb-4">
+            <ErrorState message={goalActionError} />
+          </div>
+        )}
         <div className="grid grid-cols-12 gap-gutter">
           <AgentInsightCard
             recommendation={pendingRecommendation}
             onAccept={handleAcceptRecommendation}
             accepting={respondingId === pendingRecommendation?.id}
           />
-          <PrimaryGoalCard goal={primaryGoal} />
+          <PrimaryGoalCard goal={primaryGoal} onDelete={handleDeleteGoal} busy={mutatingId === primaryGoal.id} />
 
           <div id="pending" className="col-span-12 md:col-span-4 scroll-mt-24">
             {recsError ? (
@@ -169,14 +205,21 @@ export default function DashboardPage() {
               <h3 className="text-label-md font-bold text-primary mb-4">Otras Metas</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
                 {otherGoals.map((goal) => (
-                  <GoalCard key={goal.id} goal={goal} />
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onSetPrimary={handleSetPrimary}
+                    onDelete={handleDeleteGoal}
+                    busy={mutatingId === goal.id}
+                  />
                 ))}
               </div>
             </section>
           )}
 
           <MicroSavingsCard transactions={transactions ?? []} currency={primaryGoal.currency} />
-          <CapitalDistributionCard goals={goals} />
+          <CapitalDistributionCard goals={activeGoals} />
+          <MarketContextPanel variant="card" />
 
           {txError ? (
             <div className="col-span-12">
@@ -188,6 +231,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <ActivityPanel transactions={transactions ?? []} />
+          )}
+
+          {archivedGoals.length > 0 && (
+            <div className="col-span-12">
+              <ArchivedGoalsSection goals={archivedGoals} />
+            </div>
           )}
         </div>
       </div>

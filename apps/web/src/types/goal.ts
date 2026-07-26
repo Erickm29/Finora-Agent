@@ -10,7 +10,7 @@
  *   need to be requested through a separate endpoint.
  * - Whether goals support categories/tags beyond the ones proposed here.
  */
-export type GoalStatus = 'active' | 'completed' | 'paused'
+export type GoalStatus = 'active' | 'completed' | 'paused' | 'cancelled'
 
 export type GoalCategory = 'buy' | 'save' | 'emergency' | 'other'
 
@@ -27,6 +27,12 @@ export interface Goal {
   status: GoalStatus
   priority: 'Alta' | 'Media' | 'Baja'
   createdAt: string // ISO date
+  /**
+   * Meta marcada como prioritaria por el usuario (metadata.is_primary en la API).
+   * Regla compartida con Telegram/API: primary = is_primary true, si no la
+   * primera activa, si no la primera del listado.
+   */
+  isPrimary: boolean
 }
 
 export interface CreateGoalPayload {

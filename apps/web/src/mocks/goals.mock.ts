@@ -1,6 +1,16 @@
 import type { CreateGoalPayload, Goal } from '../types'
 import { ApiError } from '../types/api'
-import { addGoal, delay, getGoals, getSessionUserId, nowIso, uid } from './store'
+import {
+  addGoal,
+  delay,
+  getGoalById,
+  getGoals,
+  getSessionUserId,
+  nowIso,
+  setGoalStatus,
+  setPrimaryGoalId,
+  uid,
+} from './store'
 
 const categoryIcons: Record<CreateGoalPayload['category'], string> = {
   buy: 'shopping_bag',
@@ -56,8 +66,23 @@ export async function mockCreateGoal(payload: CreateGoalPayload): Promise<Goal> 
     status: 'active',
     priority: categoryPriority[payload.category],
     createdAt: nowIso(),
+    isPrimary: false,
   }
 
   addGoal(userId, goal)
   return delay(goal, 900) // slightly longer latency to sell the "IA está calculando tu plan" moment
+}
+
+export async function mockCancelGoal(goalId: string): Promise<Goal> {
+  const userId = requireUserId()
+  setGoalStatus(userId, goalId, 'cancelled')
+  const goal = getGoalById(userId, goalId)
+  if (!goal) throw await delay(new ApiError('Meta no encontrada.', 404))
+  return delay(goal)
+}
+
+export async function mockSetPrimaryGoal(goalId: string): Promise<Goal[]> {
+  const userId = requireUserId()
+  setPrimaryGoalId(userId, goalId)
+  return delay(getGoals(userId))
 }
