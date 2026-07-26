@@ -17,7 +17,8 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "@finora/shared": "*"
+    "@finora/shared": "*",
+    "@types/node": "^22.13.10"
   },
   "devDependencies": {
     "tsx": "^4.19.3",
