@@ -54,7 +54,8 @@ export const env = {
   /** Cuánto vale un análisis ya generado antes de considerarlo viejo. */
   analysisTtlMs: Number(process.env.ANALYSIS_TTL_MS ?? 24 * 60 * 60 * 1000),
   wallbitApiKey: process.env.WALLBIT_API_KEY ?? "",
-  wallbitApiUrl: process.env.WALLBIT_API_URL ?? "",
+  /** Base de la Public API. Default producción. */
+  wallbitApiUrl: process.env.WALLBIT_API_URL || "https://api.wallbit.io",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? "",
 };

@@ -407,7 +407,16 @@ export class InMemoryMarketSnapshotsRepo implements MarketSnapshotsRepo {
 
 export const stubWallbit: WallbitClient = {
   async executeConvert(payload) {
-    return { ok: true, result: { stub: true, payload } };
+    return {
+      ok: true,
+      result: {
+        stub: true,
+        provider: "wallbit",
+        message:
+          "Preparación confirmada; la conversión real queda pendiente de cuenta Wallbit. No se movió dinero.",
+        payload,
+      },
+    };
   },
 };
 

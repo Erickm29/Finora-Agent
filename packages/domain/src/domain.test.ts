@@ -45,6 +45,36 @@ describe("PendingActionsService", () => {
     const updated = await goals.get(userId, goal.id);
     assert.equal(updated.accumulatedBobs, 200);
     assert.equal(updated.progressRatio, 200 / 8500);
+
+    // Segunda confirmación: no debe duplicar el aporte.
+    const second = await pending.confirm(userId, action.id);
+    assert.equal(second.idempotent, true);
+    const still = await goals.get(userId, goal.id);
+    assert.equal(still.accumulatedBobs, 200);
+  });
+
+  it("wallbit confirm reports stub without moving goal balance", async () => {
+    const repos = createInMemoryRepos();
+    const goals = new GoalsService(repos);
+    const pending = new PendingActionsService(repos);
+    const userId = "44444444-4444-4444-4444-444444444444";
+    const goal = await goals.create(userId, {
+      name: "Fondo",
+      target_amount_bobs: 3000,
+      target_months: 3,
+      base_monthly_bobs: 1000,
+    });
+    const action = await pending.prepareWallbitConvert({
+      userId,
+      goalId: goal.id,
+      amountBobs: 500,
+      channel: "telegram",
+    });
+    const result = await pending.confirm(userId, action.id);
+    assert.equal(result.action.status, "confirmed");
+    assert.equal(result.execution?.stub, true);
+    const still = await goals.get(userId, goal.id);
+    assert.equal(still.accumulatedBobs, 0);
   });
 
   it("cancels pending action without changing balance", async () => {
@@ -90,5 +120,48 @@ describe("GuardrailsService", () => {
     });
     assert.ok(result.delayMonths >= 1);
     assert.match(result.message, /retrasará/);
+  });
+});
+
+describe("GoalsService primary and cancel", () => {
+  it("setPrimary clears the flag on other goals", async () => {
+    const repos = createInMemoryRepos();
+    const goals = new GoalsService(repos);
+    const userId = "55555555-5555-5555-5555-555555555555";
+    const a = await goals.create(userId, {
+      name: "A",
+      target_amount_bobs: 1000,
+      target_months: 2,
+      base_monthly_bobs: 500,
+    });
+    const b = await goals.create(userId, {
+      name: "B",
+      target_amount_bobs: 2000,
+      target_months: 4,
+      base_monthly_bobs: 500,
+    });
+    await goals.setPrimary(userId, b.id);
+    const primary = await goals.getPrimary(userId);
+    assert.equal(primary?.id, b.id);
+    const againA = await goals.get(userId, a.id);
+    assert.equal(Boolean(againA.metadata.is_primary), false);
+  });
+
+  it("cancel soft-deletes and getPrimary skips cancelled", async () => {
+    const repos = createInMemoryRepos();
+    const goals = new GoalsService(repos);
+    const userId = "66666666-6666-6666-6666-666666666666";
+    const a = await goals.create(userId, {
+      name: "Only",
+      target_amount_bobs: 1000,
+      target_months: 2,
+      base_monthly_bobs: 500,
+    });
+    await goals.setPrimary(userId, a.id);
+    await goals.cancel(userId, a.id);
+    const cancelled = await goals.get(userId, a.id);
+    assert.equal(cancelled.status, "cancelled");
+    const primary = await goals.getPrimary(userId);
+    assert.equal(primary, null);
   });
 });

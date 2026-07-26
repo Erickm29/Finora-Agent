@@ -189,7 +189,7 @@ async function runTool(
         ...action,
         confirmCallback: `action:confirm:${action.id}`,
         cancelCallback: `action:cancel:${action.id}`,
-        dashboardUrl: `${env.webAppUrl}/actions`,
+        dashboardUrl: `${env.webAppUrl}/dashboard#pending`,
       };
     }
     case "generate_voice_summary": {
@@ -473,13 +473,28 @@ export async function runAgentTurn(
     const svc = services();
     let replies: AgentReply[] = [];
     if (op === "confirm") {
-      const action = await svc.pendingActions.confirm(input.userId, id);
-      replies = [
-        {
-          type: "text",
-          text: `Listo. Acción ${action.kind} confirmada.`,
-        },
-      ];
+      const { action, idempotent, execution } = await svc.pendingActions.confirm(
+        input.userId,
+        id,
+      );
+      let text: string;
+      if (idempotent) {
+        text =
+          action.status === "confirmed"
+            ? "Esa acción ya estaba confirmada. No se aplicó de nuevo."
+            : "Esa acción ya estaba cancelada. No se aplicó nada.";
+      } else if (action.kind === "wallbit_convert" && execution?.stub) {
+        text =
+          execution.message ??
+          "Preparación Wallbit confirmada. La conversión real queda pendiente de cuenta; no se movió dinero.";
+      } else if (action.kind === "apply_microsaving") {
+        text = "Listo. El microahorro quedó acreditado en tu meta.";
+      } else if (action.kind === "confirm_withdrawal") {
+        text = "Listo. El retiro quedó registrado.";
+      } else {
+        text = `Listo. Acción ${action.kind} confirmada.`;
+      }
+      replies = [{ type: "text", text }];
     } else if (op === "cancel") {
       await svc.pendingActions.cancel(input.userId, id);
       replies = [{ type: "text", text: "Acción cancelada. Vos decidís." }];

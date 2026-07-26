@@ -3,6 +3,7 @@ import { FinoraError, CreateGoalInputSchema, PatchGoalInputSchema } from "@finor
 import { randomUUID } from "node:crypto";
 import type { InvestmentAnalysis } from "@finora/domain";
 import { getGoalAnalysisService, services } from "../container.js";
+import { getMarketContext } from "../analysis/market-context.js";
 import { runAgentTurn } from "../agent/runtime.js";
 import { getBotUsername } from "../bot/telegram.js";
 import { AgentTurnInputSchema } from "@finora/shared";
@@ -43,6 +44,7 @@ function serializeGoal(g: {
   metadata?: Record<string, unknown>;
   createdAt?: string;
 }) {
+  const metadata = g.metadata ?? {};
   return {
     id: g.id,
     name: g.name,
@@ -57,7 +59,8 @@ function serializeGoal(g: {
     product_url: g.productUrl ?? null,
     // El dashboard/bot lo necesitan para saber cuál es la meta prioritaria
     // (metadata.is_primary) y su categoría original.
-    metadata: g.metadata ?? {},
+    metadata,
+    is_primary: Boolean(metadata.is_primary),
     // El dashboard lo necesita para calcular si la meta va adelantada o
     // atrasada; sin esto tiene que inventar la fecha de inicio.
     created_at: g.createdAt ?? null,
@@ -116,6 +119,16 @@ v1.get("/goals", async (c) => {
   try {
     const goals = await services().goals.list(c.get("userId"));
     return c.json({ goals: goals.map(serializeGoal) });
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/goals/primary", async (c) => {
+  try {
+    const g = await services().goals.getPrimary(c.get("userId"));
+    return c.json(g ? serializeGoal(g) : null);
   } catch (err) {
     const m = mapError(err);
     return c.json(m.body, m.status as 400);
@@ -183,6 +196,41 @@ v1.patch("/goals/:id", async (c) => {
   }
 });
 
+/** Soft-delete: status cancelled. */
+v1.post("/goals/:id/cancel", async (c) => {
+  try {
+    const g = await services().goals.cancel(c.get("userId"), c.req.param("id"));
+    return c.json(serializeGoal(g));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+/** Marca la meta como prioritaria y limpia el flag en las demás. */
+v1.post("/goals/:id/primary", async (c) => {
+  try {
+    const g = await services().goals.setPrimary(
+      c.get("userId"),
+      c.req.param("id"),
+    );
+    return c.json(serializeGoal(g));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/market/context", async (c) => {
+  try {
+    const ctx = await getMarketContext();
+    return c.json(ctx);
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
 v1.get("/goals/:id/transactions", async (c) => {
   try {
     const txs = await services().goals.transactions(
@@ -226,15 +274,19 @@ v1.get("/actions/pending", async (c) => {
 
 v1.post("/actions/:id/confirm", async (c) => {
   try {
-    const action = await services().pendingActions.confirm(
-      c.get("userId"),
-      c.req.param("id"),
-    );
+    const { action, idempotent, execution } =
+      await services().pendingActions.confirm(
+        c.get("userId"),
+        c.req.param("id"),
+      );
     return c.json({
       id: action.id,
       status: action.status,
       confirmed_at: action.confirmedAt,
-      result: {},
+      idempotent: Boolean(idempotent),
+      result: execution?.result ?? {},
+      stub: Boolean(execution?.stub),
+      message: execution?.message ?? null,
     });
   } catch (err) {
     const m = mapError(err);
