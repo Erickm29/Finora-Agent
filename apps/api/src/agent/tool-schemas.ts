@@ -54,6 +54,15 @@ const schemas = {
     amount_bobs: amountBobs,
     to: nonEmptyText.default("USD"),
   }),
+  lookup_asset_price: z.object({
+    symbol: z
+      .string()
+      .trim()
+      .min(1, "indicá el ticker")
+      .max(16, "ticker demasiado largo")
+      .transform((s) => s.toUpperCase().replace(/[^A-Z0-9.\-]/g, ""))
+      .refine((s) => s.length > 0, "indicá un ticker válido (ej. NVDA)"),
+  }),
   generate_voice_summary: z.object({ text: nonEmptyText }),
 } satisfies Record<string, z.ZodTypeAny>;
 
@@ -204,6 +213,24 @@ export const agentTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           to: { type: "string", description: "Divisa destino (default USD)" },
         },
         required: ["amount_bobs"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "lookup_asset_price",
+      description:
+        "Cotización de una acción/ETF vía Wallbit (solo lectura). Usala cuando el usuario pregunta el precio de un ticker (NVDA, AAPL, etc.).",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: {
+            type: "string",
+            description: "Ticker bursátil, ej. NVDA o AAPL",
+          },
+        },
+        required: ["symbol"],
       },
     },
   },

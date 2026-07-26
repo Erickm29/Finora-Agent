@@ -11,6 +11,10 @@ import {
   researchMacroContext,
   researchProductPrice,
 } from "../integrations/market.js";
+import {
+  formatAssetQuote,
+  getAssetQuote,
+} from "../integrations/wallbit.js";
 import { notifyChannel } from "./notifier.js";
 import { agentTools, validateToolArgs } from "./tool-schemas.js";
 
@@ -89,7 +93,8 @@ Reglas al usar herramientas:
   llamá primero a get_active_goal y usá el id exacto que devuelve.
 - Una acción preparada queda PENDIENTE: no digas que se aplicó, se acreditó ni que
   fue exitosa. Decí que quedó lista y que se aplica cuando el usuario confirme.
-- El saldo acumulado de la meta no cambia hasta que el usuario confirma.`;
+- El saldo acumulado de la meta no cambia hasta que el usuario confirma.
+- Si preguntan el precio de una acción o ticker, usá lookup_asset_price. No inventes cotizaciones.`;
 
 /**
  * Dispara el pipeline de análisis de inversión sin bloquear el turno. Cuando
@@ -191,6 +196,36 @@ async function runTool(
         cancelCallback: `action:cancel:${action.id}`,
         dashboardUrl: `${env.webAppUrl}/dashboard#pending`,
       };
+    }
+    case "lookup_asset_price": {
+      const symbol = args.symbol as string;
+      try {
+        const quote = await getAssetQuote(symbol);
+        if (!quote) {
+          return {
+            ok: false,
+            symbol,
+            message: `No encontré el ticker ${symbol} en Wallbit.`,
+          };
+        }
+        return {
+          ok: true,
+          symbol: quote.symbol,
+          name: quote.name ?? null,
+          price: quote.price ?? null,
+          currency: quote.currency ?? "USD",
+          summary: formatAssetQuote(quote),
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          symbol,
+          message:
+            err instanceof Error
+              ? err.message.slice(0, 200)
+              : "Wallbit no disponible",
+        };
+      }
     }
     case "generate_voice_summary": {
       const audio = await generateVoiceSummary(args.text as string);
@@ -374,6 +409,36 @@ async function heuristicTurn(
         ],
       },
     ]);
+  }
+
+  // Cotización de ticker sin IA (ej. "precio de NVDA", "cuánto está AAPL").
+  const rawText = input.text ?? "";
+  const priceIntent =
+    /precio|cotizaci[oó]n|cu[aá]nto\s+est[aá]|valor\s+de|ticker/i.test(rawText);
+  const tickerMatch = rawText.match(
+    /(?:precio|cotizaci[oó]n|cu[aá]nto\s+est[aá]|valor\s+de|ticker)\s+(?:de\s+|del\s+)?([A-Za-z]{1,5})\b/i,
+  );
+  if (priceIntent && tickerMatch) {
+    const symbol = tickerMatch[1].toUpperCase();
+    try {
+      const quote = await getAssetQuote(symbol);
+      if (!quote) {
+        return finish([
+          {
+            type: "text",
+            text: `No encontré “${symbol}” en Wallbit. Probá otro ticker o /accion ${symbol}.`,
+          },
+        ]);
+      }
+      return finish([{ type: "text", text: formatAssetQuote(quote) }]);
+    } catch {
+      return finish([
+        {
+          type: "text",
+          text: "No pude consultar esa cotización en Wallbit ahora.",
+        },
+      ]);
+    }
   }
 
   if (/laptop|macbook|comprar|nueva meta|crear meta/.test(text)) {

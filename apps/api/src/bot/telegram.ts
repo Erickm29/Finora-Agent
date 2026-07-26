@@ -1,4 +1,10 @@
-import { Bot, type Context, InlineKeyboard, webhookCallback } from "grammy";
+import {
+  Bot,
+  type Context,
+  InlineKeyboard,
+  Keyboard,
+  webhookCallback,
+} from "grammy";
 import { randomUUID } from "node:crypto";
 import { FinoraError } from "@finora/shared";
 import { env } from "../env.js";
@@ -7,6 +13,13 @@ import { formatAnalysisForChat } from "../analysis/format.js";
 import { getMarketContext } from "../analysis/market-context.js";
 import { runAgentTurn, type AgentReply } from "../agent/runtime.js";
 import { registerChannelNotifier } from "../agent/notifier.js";
+import {
+  formatAssetQuote,
+  formatPortfolioBalance,
+  getAssetQuote,
+  getStocksPortfolio,
+} from "../integrations/wallbit.js";
+import { formatPendingActionMessage } from "./digest-format.js";
 
 let bot: Bot | null = null;
 
@@ -233,6 +246,24 @@ function keyboardFromButtons(
   return kb;
 }
 
+/** Teclado fijo: el usuario toca y Telegram manda el comando como texto. */
+function mainReplyKeyboard() {
+  return new Keyboard()
+    .text("/saldo")
+    .text("/mercado")
+    .text("/progreso")
+    .row()
+    .text("/meta")
+    .text("/plan")
+    .text("/priorizar")
+    .row()
+    .text("/microahorro")
+    .text("/proteger")
+    .text("/ayuda")
+    .resized()
+    .persistent();
+}
+
 function defaultMicrosavingAmount(baseMonthlyBobs: number): number {
   return Math.max(50, Math.round(baseMonthlyBobs * 0.1));
 }
@@ -242,6 +273,51 @@ function actionButtons(actionId: string) {
     { label: "Confirmar", callbackData: `action:confirm:${actionId}` },
     { label: "Cancelar", callbackData: `action:cancel:${actionId}` },
   ];
+}
+
+async function replyAssetQuote(ctx: Context, rawSymbol: string) {
+  const symbol = rawSymbol.trim().toUpperCase();
+  if (!symbol) {
+    await ctx.reply(
+      "Decime el ticker. Ejemplo: /accion NVDA o /precio AAPL",
+      { reply_markup: mainReplyKeyboard() },
+    );
+    return;
+  }
+  await ctx.replyWithChatAction("typing").catch(() => undefined);
+  try {
+    const quote = await getAssetQuote(symbol);
+    if (!quote) {
+      await ctx.reply(
+        `No encontré “${symbol}” en Wallbit. Probá otro ticker (ej. NVDA, AAPL).`,
+        { reply_markup: mainReplyKeyboard() },
+      );
+      return;
+    }
+    await ctx.reply(formatAssetQuote(quote), {
+      reply_markup: mainReplyKeyboard(),
+    });
+  } catch (err) {
+    console.error("[finora] cotización Wallbit error", err);
+    await ctx.reply(
+      "No pude consultar ese precio en Wallbit ahora. Probá de nuevo en un rato.",
+      { reply_markup: mainReplyKeyboard() },
+    );
+  }
+}
+
+/**
+ * Track B / digest: notifica una pending_action con riesgos/beneficios + botones.
+ * Reexportado vía notifier helpers; el bot también lo usa si hace falta.
+ */
+export async function sendPendingActionToChat(
+  chatId: string,
+  action: { id: string; kind: string; payload: Record<string, unknown> },
+) {
+  const formatted = formatPendingActionMessage(action);
+  await sendProactiveMessage(chatId, formatted.text, {
+    buttons: formatted.buttons,
+  });
 }
 
 let cachedBotUsername: string | null = null;
@@ -265,12 +341,20 @@ export async function getBotUsername(): Promise<string | null> {
   }
 }
 
-/** Mensaje proactivo (sin `ctx`), por ejemplo el plan de inversión ya listo. */
-async function sendProactiveMessage(chatId: string, text: string) {
+/** Mensaje proactivo (sin `ctx`), p. ej. plan listo o digest con botones. */
+async function sendProactiveMessage(
+  chatId: string,
+  text: string,
+  options?: { buttons?: { label: string; callbackData: string }[] },
+) {
   const b = getBot();
   if (!b) return;
-  for (const chunk of splitForTelegram(text)) {
-    await b.api.sendMessage(chatId, chunk);
+  const chunks = splitForTelegram(text);
+  for (let i = 0; i < chunks.length; i++) {
+    const isLast = i === chunks.length - 1;
+    await b.api.sendMessage(chatId, chunks[i], {
+      reply_markup: isLast ? keyboardFromButtons(options?.buttons) : undefined,
+    });
   }
 }
 
@@ -315,14 +399,17 @@ export function getBot(): Bot | null {
       // metas que ya existían en el chat aparecen en el dashboard.
       await services().repos.profiles.linkTelegram(userId, ctx.from.id, handle);
       await ctx.reply(
-        "Cuenta vinculada. Tus metas de este chat y las del dashboard son ahora la misma cuenta.",
+        "Cuenta vinculada. Tus metas de este chat y las del dashboard son ahora la misma cuenta.\n" +
+          "Usá el teclado de abajo o /ayuda.",
+        { reply_markup: mainReplyKeyboard() },
       );
       return;
     }
     await resolveUser(ctx);
     await ctx.reply(
       "Hola, soy Finora — tu mentor financiero en Bolivia (Bs).\n" +
-        "Contame tu meta o usá /meta, /progreso, /plan, /priorizar, /mercado, /ayuda.",
+        "Contame tu meta o usá el teclado / los comandos: /saldo, /mercado, /progreso, /ayuda.",
+      { reply_markup: mainReplyKeyboard() },
     );
   });
 
@@ -330,6 +417,9 @@ export function getBot(): Bot | null {
     await ctx.reply(
       "Comandos:\n" +
         "/start — comenzar\n" +
+        "/saldo — saldo / posiciones Wallbit\n" +
+        "/accion TICKER — cotización (ej. /accion NVDA)\n" +
+        "/precio TICKER — alias de /accion\n" +
         "/meta — ver metas activas\n" +
         "/progreso — avance de la meta prioritaria\n" +
         "/plan — plan de inversión de la meta prioritaria\n" +
@@ -339,8 +429,34 @@ export function getBot(): Bot | null {
         "/eliminar — archivar meta prioritaria (o /eliminar nombre)\n" +
         "/mercado — resumen corto Wallbit/macro\n" +
         "/ayuda — esta ayuda\n\n" +
-        "También podés escribir en lenguaje natural. Nada de dinero se mueve sin tu OK.",
+        "También podés escribir en lenguaje natural (ej. “¿cuánto está AAPL?”).\n" +
+        "Nada de dinero se mueve sin tu OK.",
+      { reply_markup: mainReplyKeyboard() },
     );
+  });
+
+  bot.command("saldo", async (ctx) => {
+    await ctx.replyWithChatAction("typing").catch(() => undefined);
+    try {
+      const portfolio = await getStocksPortfolio();
+      await ctx.reply(formatPortfolioBalance(portfolio), {
+        reply_markup: mainReplyKeyboard(),
+      });
+    } catch (err) {
+      console.error("[finora] /saldo error", err);
+      await ctx.reply(
+        "No pude consultar tu saldo en Wallbit ahora. Probá de nuevo en un rato.",
+        { reply_markup: mainReplyKeyboard() },
+      );
+    }
+  });
+
+  bot.command("accion", async (ctx) => {
+    await replyAssetQuote(ctx, ctx.match?.toString() ?? "");
+  });
+
+  bot.command("precio", async (ctx) => {
+    await replyAssetQuote(ctx, ctx.match?.toString() ?? "");
   });
 
   bot.command("meta", async (ctx) => {
@@ -569,11 +685,14 @@ export function getBot(): Bot | null {
     await ctx.replyWithChatAction("typing").catch(() => undefined);
     try {
       const market = await getMarketContext();
-      await ctx.reply(formatMarketSummary(market));
+      await ctx.reply(formatMarketSummary(market), {
+        reply_markup: mainReplyKeyboard(),
+      });
     } catch (err) {
       console.error("[finora] /mercado error", err);
       await ctx.reply(
         "No pude armar el resumen de mercado ahora. Probá de nuevo en un rato.",
+        { reply_markup: mainReplyKeyboard() },
       );
     }
   });

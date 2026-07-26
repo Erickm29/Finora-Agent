@@ -100,13 +100,8 @@ export async function getFiatRate(
   return { from, to, rate, raw };
 }
 
-/** Muestra corta de assets disponibles (bolsa / ETF). */
-export async function listAssets(limit = 5): Promise<WallbitAssetSummary[]> {
-  const raw = (await wallbitGet("/api/public/v1/assets")) as {
-    data?: Record<string, unknown>[];
-  };
-  const rows = Array.isArray(raw.data) ? raw.data : [];
-  return rows.slice(0, limit).map((row) => ({
+function mapAssetRow(row: Record<string, unknown>): WallbitAssetSummary {
+  return {
     symbol: String(row.symbol ?? row.ticker ?? "").toUpperCase() || "?",
     name:
       typeof row.name === "string"
@@ -124,7 +119,88 @@ export async function listAssets(limit = 5): Promise<WallbitAssetSummary[]> {
         : typeof row.quote_currency === "string"
           ? row.quote_currency
           : "USD",
-  }));
+  };
+}
+
+/** Muestra corta de assets disponibles (bolsa / ETF). */
+export async function listAssets(limit = 5): Promise<WallbitAssetSummary[]> {
+  const raw = (await wallbitGet("/api/public/v1/assets")) as {
+    data?: Record<string, unknown>[];
+  };
+  const rows = Array.isArray(raw.data) ? raw.data : [];
+  return rows.slice(0, limit).map(mapAssetRow);
+}
+
+/**
+ * Cotización de un ticker vía Public API.
+ * Intenta filtro `symbol` y, si no viene, busca en el listado de assets.
+ */
+export async function getAssetQuote(
+  symbol: string,
+): Promise<WallbitAssetSummary | null> {
+  const sym = symbol.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, "");
+  if (!sym) return null;
+
+  try {
+    const filtered = (await wallbitGet("/api/public/v1/assets", {
+      symbol: sym,
+    })) as { data?: Record<string, unknown>[] };
+    const rows = Array.isArray(filtered.data) ? filtered.data : [];
+    const hit = rows
+      .map(mapAssetRow)
+      .find((a) => a.symbol === sym || a.symbol.startsWith(sym));
+    if (hit) return hit;
+  } catch {
+    /* caemos al listado completo */
+  }
+
+  const raw = (await wallbitGet("/api/public/v1/assets")) as {
+    data?: Record<string, unknown>[];
+  };
+  const rows = Array.isArray(raw.data) ? raw.data : [];
+  return (
+    rows
+      .map(mapAssetRow)
+      .find((a) => a.symbol === sym || a.symbol === `${sym}.US`) ?? null
+  );
+}
+
+export function formatPortfolioBalance(portfolio: {
+  positions: WallbitPosition[];
+  usdCash: number | null;
+}): string {
+  const lines = ["Saldo Wallbit (inversión)"];
+  if (portfolio.usdCash != null) {
+    lines.push(
+      `Caja USD: ${Number(portfolio.usdCash).toLocaleString("es-BO")}`,
+    );
+  }
+  if (!portfolio.positions.length) {
+    lines.push("Sin posiciones abiertas.");
+  } else {
+    for (const p of portfolio.positions.slice(0, 15)) {
+      lines.push(
+        `• ${p.symbol}: ${Number(p.shares).toLocaleString("es-BO")} shares`,
+      );
+    }
+    if (portfolio.positions.length > 15) {
+      lines.push(`… y ${portfolio.positions.length - 15} más`);
+    }
+  }
+  lines.push("Solo lectura — no se mueve dinero.");
+  return lines.join("\n");
+}
+
+export function formatAssetQuote(quote: WallbitAssetSummary): string {
+  const name = quote.name ? ` (${quote.name})` : "";
+  if (quote.price == null) {
+    return `${quote.symbol}${name}: Wallbit no devolvió precio ahora.`;
+  }
+  const cur = quote.currency ?? "USD";
+  return (
+    `${quote.symbol}${name}: ${Number(quote.price).toLocaleString("es-BO")} ${cur}\n` +
+    "Cotización de referencia (Wallbit). No es una orden."
+  );
 }
 
 export type WallbitMarketSnapshot = {
