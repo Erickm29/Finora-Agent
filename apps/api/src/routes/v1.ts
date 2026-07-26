@@ -1,12 +1,18 @@
 import { Hono } from "hono";
-import { FinoraError, CreateGoalInputSchema, PatchGoalInputSchema } from "@finora/shared";
+import {
+  FinoraError,
+  CreateGoalInputSchema,
+  PatchGoalInputSchema,
+  PatchPreferencesInputSchema,
+  AgentTurnInputSchema,
+} from "@finora/shared";
 import { randomUUID } from "node:crypto";
 import type { InvestmentAnalysis } from "@finora/domain";
 import { getGoalAnalysisService, services } from "../container.js";
 import { getMarketContext } from "../analysis/market-context.js";
 import { runAgentTurn } from "../agent/runtime.js";
 import { getBotUsername } from "../bot/telegram.js";
-import { AgentTurnInputSchema } from "@finora/shared";
+import { runDigestPass } from "../jobs/digest-scheduler.js";
 
 type Variables = { userId: string };
 
@@ -225,6 +231,44 @@ v1.get("/market/context", async (c) => {
   try {
     const ctx = await getMarketContext();
     return c.json(ctx);
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/preferences", async (c) => {
+  try {
+    const prefs = await services().preferences.get(c.get("userId"));
+    return c.json({ preferences: prefs });
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.patch("/preferences", async (c) => {
+  try {
+    const body = PatchPreferencesInputSchema.parse(await c.req.json());
+    const prefs = await services().preferences.patch(c.get("userId"), body);
+    return c.json({ preferences: prefs });
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+/** Smoke/demo: fuerza un digest para el usuario actual (ignora horario). */
+v1.post("/jobs/digest/run", async (c) => {
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as {
+      force?: boolean;
+    };
+    const result = await runDigestPass({
+      userId: c.get("userId"),
+      force: body.force !== false,
+    });
+    return c.json(result);
   } catch (err) {
     const m = mapError(err);
     return c.json(m.body, m.status as 400);

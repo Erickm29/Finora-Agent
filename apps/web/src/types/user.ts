@@ -23,6 +23,9 @@ export type PreferredCurrency = 'BOB' | 'USD' | 'EUR'
 
 export type RecommendationFrequency = 'daily' | 'weekly' | 'realtime'
 
+/** Presets MVP del briefing Wallbit (America/La_Paz). */
+export type DigestLocalTime = '08:00' | '12:00' | '18:00' | '21:00'
+
 export interface UserPreferences {
   currency: PreferredCurrency
   notificationsEnabled: boolean
@@ -31,6 +34,10 @@ export interface UserPreferences {
   dailyAiSummary: boolean
   liquidationAlerts: boolean
   achievableGoalSuggestions: boolean
+  /** Briefing Wallbit: crea pending_actions; requiere confirmación humana. */
+  digestEnabled: boolean
+  digestLocalTime: DigestLocalTime
+  timezone: string
 }
 
 export interface AuthCredentials {

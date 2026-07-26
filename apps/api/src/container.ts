@@ -3,6 +3,7 @@ import {
   GuardrailsService,
   MicrosavingsService,
   PendingActionsService,
+  PreferencesService,
   createInMemoryRepos,
   stubWallbit,
   type DomainRepos,
@@ -52,6 +53,7 @@ export function services() {
     guardrails: new GuardrailsService(r),
     microsavings: new MicrosavingsService(r),
     pendingActions: new PendingActionsService(r),
+    preferences: new PreferencesService(r),
     repos: r,
     wallbit: r.wallbit ?? stubWallbit,
   };

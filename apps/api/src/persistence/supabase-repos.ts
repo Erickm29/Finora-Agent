@@ -116,13 +116,21 @@ function mapProfile(row: {
   telegram_user_id: number | null;
   locale: string;
   currency: string;
+  preferences?: unknown;
 }): Profile {
+  const prefs =
+    row.preferences &&
+    typeof row.preferences === "object" &&
+    !Array.isArray(row.preferences)
+      ? (row.preferences as Record<string, unknown>)
+      : {};
   return {
     id: row.id,
     displayName: row.display_name,
     telegramUserId: row.telegram_user_id,
     locale: row.locale,
     currency: row.currency,
+    preferences: prefs,
   };
 }
 
@@ -447,6 +455,25 @@ class SupabaseProfilesRepo implements ProfilesRepo {
 
     if (Date.parse(data.expires_at) <= Date.now()) return null;
     return claimed.user_id as string;
+  }
+
+  async updatePreferences(userId: string, patch: Record<string, unknown>) {
+    const current = await this.ensure(userId);
+    const merged = { ...(current.preferences ?? {}), ...patch };
+    const { data, error } = await this.db
+      .from("profiles")
+      .update({ preferences: merged })
+      .eq("id", userId)
+      .select("*")
+      .single();
+    if (error) throwSb(error, "profiles.updatePreferences");
+    return mapProfile(data);
+  }
+
+  async listAll() {
+    const { data, error } = await this.db.from("profiles").select("*");
+    if (error) throwSb(error, "profiles.listAll");
+    return (data ?? []).map(mapProfile);
   }
 }
 

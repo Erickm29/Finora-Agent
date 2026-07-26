@@ -58,6 +58,9 @@ export const defaultPreferences: UserPreferences = {
   dailyAiSummary: true,
   liquidationAlerts: true,
   achievableGoalSuggestions: false,
+  digestEnabled: false,
+  digestLocalTime: '08:00',
+  timezone: 'America/La_Paz',
 }
 
 export function getSessionUserId(): string | null {

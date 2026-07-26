@@ -61,6 +61,40 @@ export const PatchGoalInputSchema = z.object({
 });
 export type PatchGoalInput = z.infer<typeof PatchGoalInputSchema>;
 
+/** Horarios preset del digest Wallbit (MVP). */
+export const DigestLocalTimeSchema = z.enum([
+  "08:00",
+  "12:00",
+  "18:00",
+  "21:00",
+]);
+export type DigestLocalTime = z.infer<typeof DigestLocalTimeSchema>;
+
+export const DigestPreferencesSchema = z.object({
+  digest_enabled: z.boolean().default(false),
+  digest_local_time: DigestLocalTimeSchema.default("08:00"),
+  timezone: z.string().min(1).default("America/La_Paz"),
+  /** YYYY-MM-DD en timezone del usuario; evita dobles digests el mismo día. */
+  last_digest_date: z.string().nullable().optional(),
+});
+export type DigestPreferences = z.infer<typeof DigestPreferencesSchema>;
+
+export const PatchPreferencesInputSchema = z.object({
+  digest_enabled: z.boolean().optional(),
+  digest_local_time: DigestLocalTimeSchema.optional(),
+  timezone: z.string().min(1).optional(),
+  last_digest_date: z.string().nullable().optional(),
+});
+export type PatchPreferencesInput = z.infer<typeof PatchPreferencesInputSchema>;
+
+export function normalizeDigestPreferences(
+  raw: unknown,
+): DigestPreferences {
+  const parsed = DigestPreferencesSchema.safeParse(raw ?? {});
+  if (parsed.success) return parsed.data;
+  return DigestPreferencesSchema.parse({});
+}
+
 export const AgentTurnInputSchema = z.object({
   userId: z.string().uuid(),
   channel: ChannelSchema,

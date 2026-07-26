@@ -18,6 +18,9 @@ export interface ActionConfirmationData {
   riskReductionNote: string
   reversibleNote: string
   confirmLabel?: string
+  risks?: string[]
+  benefits?: string[]
+  source?: { title: string; url?: string; snippet?: string }
 }
 
 interface ActionConfirmationModalProps {
@@ -126,7 +129,7 @@ export default function ActionConfirmationModal({ open, data, onClose, onConfirm
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="payments" className="text-primary text-sm" />
                 <span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                  Monto a Convertir
+                  Monto
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
@@ -139,6 +142,64 @@ export default function ActionConfirmationModal({ open, data, onClose, onConfirm
                 <p className="text-label-sm font-label-sm text-on-surface-variant">Desde {data.sourceAccount}</p>
               )}
             </div>
+
+            {data.risks && data.risks.length > 0 && (
+              <div className="bg-surface-container-low p-stack-sm rounded-xl border border-outline-variant/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="warning" className="text-primary text-sm" />
+                  <span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Riesgos
+                  </span>
+                </div>
+                <ul className="space-y-1 list-disc pl-4 text-body-md text-on-surface">
+                  {data.risks.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {data.benefits && data.benefits.length > 0 && (
+              <div className="bg-surface-container-low p-stack-sm rounded-xl border border-outline-variant/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="verified" className="text-secondary text-sm" />
+                  <span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Beneficios
+                  </span>
+                </div>
+                <ul className="space-y-1 list-disc pl-4 text-body-md text-on-surface">
+                  {data.benefits.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {data.source && (
+              <div className="md:col-span-2 bg-surface-container-low p-stack-sm rounded-xl border border-outline-variant/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="link" className="text-primary text-sm" />
+                  <span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Fuente
+                  </span>
+                </div>
+                {data.source.url ? (
+                  <a
+                    href={data.source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-body-md text-primary underline"
+                  >
+                    {data.source.title}
+                  </a>
+                ) : (
+                  <p className="text-body-md text-on-surface">{data.source.title}</p>
+                )}
+                {data.source.snippet && (
+                  <p className="text-label-md text-on-surface-variant mt-1">{data.source.snippet}</p>
+                )}
+              </div>
+            )}
 
             {hasProbabilityImpact && (
               <div className="md:col-span-2 bg-primary-container/5 p-stack-sm rounded-xl border border-primary/10">

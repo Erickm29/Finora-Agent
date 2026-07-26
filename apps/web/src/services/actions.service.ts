@@ -1,4 +1,8 @@
-import type { Recommendation, RecommendationAction, RecommendationType } from '../types'
+import type {
+  Recommendation,
+  RecommendationAction,
+  RecommendationType,
+} from '../types'
 import { mockGetRecommendations, mockRespondToRecommendation } from '../mocks/agent.mock'
 import { apiRequest } from './apiClient'
 import { USE_MOCKS } from './config'
@@ -71,18 +75,28 @@ export async function respondToRecommendation(
 function pendingToRecommendation(action: PendingAction): Recommendation {
   const amount = numberFrom(action.payload, ['amount_bobs', 'amount', 'amountBobs'])
   const type = mapKindToType(action.kind)
+  const title =
+    stringFrom(action.payload, ['title']) ?? titleFor(action.kind)
+  const rationale = stringFrom(action.payload, ['rationale', 'reason'])
+  const risks = stringArrayFrom(action.payload, 'risks')
+  const benefits = stringArrayFrom(action.payload, 'benefits')
+  const source = sourceFrom(action.payload)
 
   return {
     id: action.id,
     goalId: action.goal_id,
     type,
-    title: titleFor(action.kind),
-    message: messageFor(action),
+    title,
+    message: messageFor(action, rationale),
     icon: iconFor(type),
     suggestedAmount: amount ?? undefined,
     currency: 'BOB',
     createdAt: action.expires_at ?? new Date().toISOString(),
     status: 'pending',
+    rationale: rationale ?? undefined,
+    risks: risks.length ? risks : undefined,
+    benefits: benefits.length ? benefits : undefined,
+    source,
   }
 }
 
@@ -98,10 +112,37 @@ function titleFor(kind: string): string {
   return 'Acción pendiente de confirmación'
 }
 
-function messageFor(action: PendingAction): string {
+function messageFor(action: PendingAction, rationale?: string | null): string {
+  if (rationale?.trim()) return rationale
   const note = action.payload.note ?? action.payload.description
   if (typeof note === 'string' && note.trim()) return note
   return `Hay una acción (${action.kind}) lista. Confirmala para continuar — Finora no mueve dinero solo.`
+}
+
+function stringFrom(payload: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const v = payload[key]
+    if (typeof v === 'string' && v.trim()) return v
+  }
+  return null
+}
+
+function stringArrayFrom(payload: Record<string, unknown>, key: string): string[] {
+  const v = payload[key]
+  if (!Array.isArray(v)) return []
+  return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+}
+
+function sourceFrom(payload: Record<string, unknown>): Recommendation['source'] {
+  const raw = payload.news_source ?? payload.source
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const obj = raw as Record<string, unknown>
+  if (typeof obj.title !== 'string' || !obj.title.trim()) return undefined
+  return {
+    title: obj.title,
+    url: typeof obj.url === 'string' ? obj.url : undefined,
+    snippet: typeof obj.snippet === 'string' ? obj.snippet : undefined,
+  }
 }
 
 function iconFor(type: RecommendationType): string {

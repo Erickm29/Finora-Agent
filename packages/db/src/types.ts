@@ -17,6 +17,7 @@ export type Database = {
           telegram_user_id: number | null;
           locale: string;
           currency: string;
+          preferences: Json;
           created_at: string;
         };
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           telegram_user_id?: number | null;
           locale?: string;
           currency?: string;
+          preferences?: Json;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;

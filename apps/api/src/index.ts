@@ -9,6 +9,7 @@ import {
   startTelegramPolling,
   telegramWebhookMiddleware,
 } from "./bot/telegram.js";
+import { startDigestScheduler } from "./jobs/digest-scheduler.js";
 
 assertRuntimeEnv();
 
@@ -87,5 +88,8 @@ void (async () => {
     console.error("[finora] Telegram bootstrap error", err);
   }
 })();
+
+// Digest Wallbit: loop local (~60s). Solo prepara pending_actions.
+startDigestScheduler();
 
 export default app;

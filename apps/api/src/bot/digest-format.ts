@@ -55,7 +55,9 @@ export function formatPendingActionMessage(action: {
   text: string;
   buttons: { label: string; callbackData: string }[];
 } {
-  const p = action.payload as DigestPayload;
+  const p = action.payload as DigestPayload & {
+    news_source?: DigestSource;
+  };
   const amount =
     typeof p.amount_bobs === "number" && Number.isFinite(p.amount_bobs)
       ? p.amount_bobs
@@ -63,6 +65,13 @@ export function formatPendingActionMessage(action: {
   const to = typeof p.to === "string" && p.to ? p.to : "USD";
   const risks = asStringList(p.risks);
   const benefits = asStringList(p.benefits);
+  // Microsaving usa payload.source como enum de aporte; la noticia va en news_source.
+  const newsSource =
+    p.news_source && typeof p.news_source === "object"
+      ? p.news_source
+      : p.source && typeof p.source === "object" && "title" in (p.source as object)
+        ? p.source
+        : undefined;
   const isDigest = p.digest === true || Boolean(p.rationale) || risks.length > 0;
 
   const lines: string[] = [];
@@ -92,16 +101,16 @@ export function formatPendingActionMessage(action: {
       lines.push("Riesgos:");
       for (const r of risks) lines.push(`• ${r}`);
     }
-    if (p.source?.title || p.source?.url) {
+    if (newsSource?.title || newsSource?.url) {
       lines.push("");
-      const srcTitle = p.source.title?.trim() || "Fuente";
+      const srcTitle = newsSource.title?.trim() || "Fuente";
       lines.push(
-        p.source.url
-          ? `Origen: ${srcTitle}\n${p.source.url}`
+        newsSource.url
+          ? `Origen: ${srcTitle}\n${newsSource.url}`
           : `Origen: ${srcTitle}`,
       );
-      if (p.source.snippet?.trim()) {
-        lines.push(p.source.snippet.trim().slice(0, 200));
+      if (newsSource.snippet?.trim()) {
+        lines.push(newsSource.snippet.trim().slice(0, 200));
       }
     }
     lines.push("");
