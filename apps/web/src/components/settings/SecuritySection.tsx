@@ -14,14 +14,21 @@ export default function SecuritySection() {
         </div>
         <h3 className="text-headline-md font-headline-md text-primary">Seguridad</h3>
       </div>
+      {/*
+        Sin endpoints reales para cambiar contraseña / 2FA / sesiones todavía.
+        En vez de un CTA que parece funcionar y no hace nada, se marca como
+        "Próximamente" y no se simula un click.
+      */}
       <ul className="space-y-4 flex-grow">
         {securityShortcuts.map((item) => (
-          <li key={item.id} className="flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-colors cursor-pointer group">
+          <li key={item.id} className="flex items-center justify-between p-3 rounded-xl opacity-60">
             <div className="flex items-center gap-3">
               <Icon name={item.icon} className="text-on-surface-variant" />
               <span className="text-label-md">{item.label}</span>
             </div>
-            <Icon name="chevron_right" className="text-outline group-hover:translate-x-1 transition-transform" />
+            <span className="text-label-sm font-bold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded-full">
+              Próximamente
+            </span>
           </li>
         ))}
       </ul>
