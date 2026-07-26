@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppShellLayout from '../layouts/AppShellLayout'
 import Icon from '../components/common/Icon'
 import Spinner from '../components/common/Spinner'
@@ -26,6 +26,7 @@ import TelegramBanner from '../components/telegram/TelegramBanner'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = useGoals()
   const { recommendations, loading: recsLoading, error: recsError, respond, respondingId } = useRecommendations()
   const { data: transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactions()
@@ -36,6 +37,14 @@ export default function DashboardPage() {
   } | null>(null)
   // Antes de los returns tempranos: los hooks no pueden llamarse condicionalmente.
   const analysis = useGoalAnalysis(goals?.[0]?.id ?? null)
+
+  // Permite que links externos (p. ej. el `dashboardUrl` que manda el bot de Telegram)
+  // lleguen directo a la bandeja de acciones pendientes con `/dashboard#pending`.
+  useEffect(() => {
+    if (location.hash !== '#pending') return
+    const target = document.getElementById('pending')
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [location.hash, goalsLoading])
 
   const showTelegramBanner = !telegramLoading && telegramStatus !== null && !telegramStatus.linked
 
@@ -107,6 +116,17 @@ export default function DashboardPage() {
     })
   }
 
+  /**
+   * Descartar no mueve dinero, así que no necesita el modal de confirmación
+   * humana (ese está reservado para acciones que sí aplican algo).
+   */
+  const handleDismissRecommendation = (id: string) => {
+    respond(id, 'dismiss').catch(() => {
+      // El error ya queda expuesto vía `actionError`/estado del hook; acá evitamos
+      // que una promesa rechazada no manejada rompa la interacción del usuario.
+    })
+  }
+
   return (
     <AppShellLayout title="Portfolio" searchPlaceholder="Search assets...">
       <div className="p-8 max-w-7xl mx-auto">
@@ -119,17 +139,20 @@ export default function DashboardPage() {
           />
           <PrimaryGoalCard goal={primaryGoal} />
 
-          {recsError ? (
-            <div className="col-span-12 md:col-span-4">
+          <div id="pending" className="col-span-12 md:col-span-4 scroll-mt-24">
+            {recsError ? (
               <ErrorState message={recsError} />
-            </div>
-          ) : recsLoading ? (
-            <div className="col-span-12 md:col-span-4">
+            ) : recsLoading ? (
               <Spinner />
-            </div>
-          ) : (
-            <AlertsPanel recommendations={recommendations} />
-          )}
+            ) : (
+              <AlertsPanel
+                recommendations={recommendations}
+                onConfirm={handleAcceptRecommendation}
+                onDismiss={handleDismissRecommendation}
+                respondingId={respondingId}
+              />
+            )}
+          </div>
 
           <div className="col-span-12">
             <InvestmentPlanCard
