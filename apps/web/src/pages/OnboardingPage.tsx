@@ -4,6 +4,8 @@ import Icon from '../components/common/Icon'
 import ChoiceCard from '../components/onboarding/ChoiceCard'
 import GoalForm from '../components/onboarding/GoalForm'
 import PlanSummaryCard from '../components/onboarding/PlanSummaryCard'
+import InvestmentPlanCard from '../components/analysis/InvestmentPlanCard'
+import { useGoalAnalysis } from '../hooks/useGoalAnalysis'
 import FinoraLogo from '../assets/logo/FinoraLogo'
 import ThemeToggle from '../components/common/ThemeToggle'
 import { onboardingGoalOptions } from '../data/goals'
@@ -24,6 +26,8 @@ export default function OnboardingPage() {
   const [createdGoal, setCreatedGoal] = useState<Goal | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // El backend arranca el análisis al crear la meta; acá solo lo esperamos.
+  const analysis = useGoalAnalysis(createdGoal?.id ?? null)
 
   const handleCreateGoal = async (payload: CreateGoalPayload) => {
     setLoading(true)
@@ -115,6 +119,13 @@ export default function OnboardingPage() {
                         </p>
                       </div>
                       <PlanSummaryCard goal={createdGoal} />
+                      <InvestmentPlanCard
+                        analysis={analysis.analysis}
+                        pending={analysis.pending}
+                        refreshing={analysis.refreshing}
+                        error={analysis.error}
+                        onRefresh={() => void analysis.refresh()}
+                      />
                     </>
                   )}
                 </div>

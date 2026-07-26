@@ -311,6 +311,112 @@ export async function researchMacroContext(query: string): Promise<MacroResearch
   }
 }
 
+/**
+ * Búsquedas crudas reutilizables por el pipeline de análisis.
+ * Se separa el fetch del parseo para poder cachear el payload original
+ * en `market_snapshots` y reinterpretarlo sin volver a salir a la red.
+ */
+export type WebSearchHit = {
+  title: string;
+  url: string | null;
+  snippet: string | null;
+};
+
+const SEARCH_TIMEOUT_MS = 12_000;
+
+export function isFirecrawlEnabled(): boolean {
+  return Boolean(env.firecrawlApiKey);
+}
+
+export function isExaEnabled(): boolean {
+  return Boolean(env.exaApiKey);
+}
+
+/**
+ * `scrape: false` devuelve solo títulos y descripciones. Para el contexto
+ * económico alcanza y evita los timeouts que provoca scrapear cada resultado.
+ */
+export async function firecrawlSearchRaw(
+  query: string,
+  limit = 5,
+  scrape = false,
+): Promise<unknown> {
+  if (!env.firecrawlApiKey) throw new Error("Firecrawl no configurado");
+  const res = await fetch("https://api.firecrawl.dev/v1/search", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.firecrawlApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      limit,
+      lang: "es",
+      country: "bo",
+      ...(scrape
+        ? { scrapeOptions: { formats: ["markdown"], onlyMainContent: true } }
+        : {}),
+    }),
+    signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Firecrawl HTTP ${res.status}`);
+  return res.json();
+}
+
+export function firecrawlHitsFromRaw(raw: unknown): WebSearchHit[] {
+  return normalizeFirecrawlHits(raw)
+    .filter((h) => h.title || h.description || h.markdown)
+    .map((h) => ({
+      title: h.title?.trim() || "Sin título",
+      url: h.url ?? null,
+      snippet: (h.description ?? h.markdown ?? "").replace(/\s+/g, " ").trim().slice(0, 600) || null,
+    }));
+}
+
+export async function exaSearchRaw(
+  query: string,
+  numResults = 5,
+): Promise<unknown> {
+  if (!env.exaApiKey) throw new Error("Exa no configurado");
+  const res = await fetch("https://api.exa.ai/search", {
+    method: "POST",
+    headers: {
+      "x-api-key": env.exaApiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      type: "auto",
+      numResults,
+      contents: {
+        text: { maxCharacters: 800 },
+        highlights: { maxCharacters: 400 },
+      },
+    }),
+    signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Exa HTTP ${res.status}`);
+  return res.json();
+}
+
+export function exaHitsFromRaw(raw: unknown): WebSearchHit[] {
+  const results = (raw as { results?: unknown }).results;
+  if (!Array.isArray(results)) return [];
+  return results
+    .filter((r): r is Record<string, unknown> => Boolean(r) && typeof r === "object")
+    .map((r) => {
+      const highlights = Array.isArray(r.highlights) ? r.highlights : [];
+      const snippet =
+        (typeof highlights[0] === "string" ? highlights[0] : undefined) ??
+        (typeof r.text === "string" ? r.text : undefined);
+      return {
+        title: typeof r.title === "string" && r.title.trim() ? r.title.trim() : "Sin título",
+        url: typeof r.url === "string" ? r.url : null,
+        snippet: snippet ? snippet.replace(/\s+/g, " ").trim().slice(0, 600) : null,
+      };
+    });
+}
+
 export async function generateVoiceSummary(text: string) {
   if (!env.elevenLabsApiKey || !env.elevenLabsVoiceId) {
     return {

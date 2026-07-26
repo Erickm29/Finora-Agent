@@ -45,6 +45,14 @@ export const env = {
   aiProvidersConfig: process.env.AI_PROVIDERS_CONFIG ?? "",
   firecrawlApiKey: process.env.FIRECRAWL_API_KEY ?? "",
   exaApiKey: process.env.EXA_API_KEY ?? "",
+  /** Interruptor de emergencia del pipeline de análisis de inversión. */
+  goalAnalysisEnabled: process.env.GOAL_ANALYSIS_ENABLED !== "false",
+  /** Cuánto vale un snapshot de Firecrawl/Exa antes de volver a buscar. */
+  analysisSourcesTtlMs: Number(
+    process.env.ANALYSIS_SOURCES_TTL_MS ?? 6 * 60 * 60 * 1000,
+  ),
+  /** Cuánto vale un análisis ya generado antes de considerarlo viejo. */
+  analysisTtlMs: Number(process.env.ANALYSIS_TTL_MS ?? 24 * 60 * 60 * 1000),
   wallbitApiKey: process.env.WALLBIT_API_KEY ?? "",
   wallbitApiUrl: process.env.WALLBIT_API_URL ?? "",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",

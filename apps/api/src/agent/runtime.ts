@@ -1,14 +1,17 @@
 import type { AgentTurnInput } from "@finora/shared";
 import { FinoraError } from "@finora/shared";
 import type OpenAI from "openai";
-import { services } from "../container.js";
+import type { Goal } from "@finora/domain";
+import { getGoalAnalysisService, services } from "../container.js";
 import { env } from "../env.js";
 import { ai, AllProvidersFailedError } from "../ai/index.js";
+import { formatAnalysisForChat } from "../analysis/format.js";
 import {
   generateVoiceSummary,
   researchMacroContext,
   researchProductPrice,
 } from "../integrations/market.js";
+import { notifyChannel } from "./notifier.js";
 import { agentTools, validateToolArgs } from "./tool-schemas.js";
 
 export type AgentReply = {
@@ -88,11 +91,32 @@ Reglas al usar herramientas:
   fue exitosa. Decí que quedó lista y que se aplica cuando el usuario confirme.
 - El saldo acumulado de la meta no cambia hasta que el usuario confirma.`;
 
+/**
+ * Dispara el pipeline de análisis de inversión sin bloquear el turno. Cuando
+ * el análisis queda listo, el usuario recibe el plan como mensaje de
+ * seguimiento en el mismo canal donde creó la meta.
+ */
+function scheduleGoalAnalysis(
+  goal: Goal,
+  channel: "telegram" | "web",
+  externalChatId?: string | null,
+) {
+  getGoalAnalysisService().schedule(goal, async (analysis, analyzedGoal) => {
+    if (!externalChatId) return;
+    await notifyChannel(
+      channel,
+      externalChatId,
+      formatAnalysisForChat(analyzedGoal, analysis),
+    );
+  });
+}
+
 async function runTool(
   userId: string,
   channel: "telegram" | "web",
   name: string,
   args: Record<string, unknown>,
+  externalChatId?: string | null,
 ) {
   const svc = services();
   switch (name) {
@@ -106,12 +130,14 @@ async function runTool(
       const baseMonthlyBobs =
         (args.base_monthly_bobs as number | undefined) ??
         Math.ceil(targetAmountBobs / targetMonths);
-      return svc.goals.create(userId, {
+      const goal = await svc.goals.create(userId, {
         name: args.name as string,
         target_amount_bobs: targetAmountBobs,
         target_months: targetMonths,
         base_monthly_bobs: baseMonthlyBobs,
       });
+      scheduleGoalAnalysis(goal, channel, externalChatId);
+      return goal;
     }
     case "get_active_goal":
       return svc.goals.list(userId);
@@ -210,6 +236,7 @@ async function executeToolCall(
       input.channel,
       validation.name,
       validation.args,
+      input.externalChatId,
     );
   } catch (err) {
     if (err instanceof FinoraError) {
@@ -388,6 +415,7 @@ async function heuristicTurn(
       base_monthly_bobs: monthly,
     });
     await svc.repos.conversations.touchSession(sessionId, goal.id);
+    scheduleGoalAnalysis(goal, input.channel, input.externalChatId);
     return finish([
       {
         type: "text",

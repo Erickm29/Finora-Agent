@@ -9,8 +9,12 @@ import type {
 import type {
   DomainRepos,
   Goal,
+  GoalAnalysisRepo,
   GoalTransaction,
   GoalsRepo,
+  InvestmentAnalysis,
+  MarketSnapshotSource,
+  MarketSnapshotsRepo,
   PendingAction,
   PendingActionsRepo,
   Profile,
@@ -18,6 +22,7 @@ import type {
   ConversationMessage,
   ConversationSession,
   ConversationsRepo,
+  UpsertInvestmentAnalysisInput,
   WallbitClient,
 } from "@finora/domain";
 import { stubWallbit } from "@finora/domain";
@@ -579,6 +584,115 @@ class SupabaseConversationsRepo implements ConversationsRepo {
   }
 }
 
+class SupabaseGoalAnalysisRepo implements GoalAnalysisRepo {
+  constructor(private readonly db: Db) {}
+
+  private map(row: {
+    id: string;
+    goal_id: string;
+    user_id: string;
+    status: string;
+    content: unknown;
+    sources: unknown;
+    provider: string | null;
+    model: string | null;
+    error: string | null;
+    generated_at: string | null;
+    created_at: string;
+    updated_at: string;
+  }): InvestmentAnalysis {
+    return {
+      id: row.id,
+      goalId: row.goal_id,
+      userId: row.user_id,
+      status: row.status as InvestmentAnalysis["status"],
+      content: (row.content as InvestmentAnalysis["content"]) ?? null,
+      sources: Array.isArray(row.sources)
+        ? (row.sources as InvestmentAnalysis["sources"])
+        : [],
+      provider: row.provider,
+      model: row.model,
+      error: row.error,
+      generatedAt: row.generated_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  async getByGoal(userId: string, goalId: string) {
+    const { data, error } = await this.db
+      .from("goal_investment_analyses")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("goal_id", goalId)
+      .maybeSingle();
+    if (error) throwSb(error, "goalAnalyses.getByGoal");
+    return data ? this.map(data) : null;
+  }
+
+  async upsert(input: UpsertInvestmentAnalysisInput) {
+    const { data, error } = await this.db
+      .from("goal_investment_analyses")
+      .upsert(
+        {
+          goal_id: input.goalId,
+          user_id: input.userId,
+          status: input.status,
+          content: input.content ?? null,
+          sources: input.sources ?? [],
+          provider: input.provider ?? null,
+          model: input.model ?? null,
+          error: input.error ?? null,
+          generated_at: input.generatedAt ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "goal_id" },
+      )
+      .select("*")
+      .single();
+    if (error) throwSb(error, "goalAnalyses.upsert");
+    return this.map(data);
+  }
+}
+
+class SupabaseMarketSnapshotsRepo implements MarketSnapshotsRepo {
+  constructor(private readonly db: Db) {}
+
+  async getFresh(
+    query: string,
+    source: MarketSnapshotSource,
+    maxAgeMs: number,
+  ) {
+    const since = new Date(Date.now() - maxAgeMs).toISOString();
+    const { data, error } = await this.db
+      .from("market_snapshots")
+      .select("query, source, data, fetched_at")
+      .eq("query", query)
+      .eq("source", source)
+      .gte("fetched_at", since)
+      .order("fetched_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    // La caché nunca debe tumbar el pipeline: si falla, seguimos sin caché.
+    if (error || !data) return null;
+    return {
+      query: data.query as string,
+      source: data.source as MarketSnapshotSource,
+      data: data.data,
+      fetchedAt: data.fetched_at as string,
+    };
+  }
+
+  async save(query: string, source: MarketSnapshotSource, data: unknown) {
+    const { error } = await this.db
+      .from("market_snapshots")
+      .insert({ query, source, data });
+    if (error) {
+      console.warn("[Analysis] No se pudo cachear el snapshot:", error.message);
+    }
+  }
+}
+
 export function createSupabaseRepos(params: {
   url: string;
   serviceRoleKey: string;
@@ -590,6 +704,8 @@ export function createSupabaseRepos(params: {
     pendingActions: new SupabasePendingActionsRepo(db),
     profiles: new SupabaseProfilesRepo(db),
     conversations: new SupabaseConversationsRepo(db),
+    goalAnalyses: new SupabaseGoalAnalysisRepo(db),
+    marketSnapshots: new SupabaseMarketSnapshotsRepo(db),
     wallbit: params.wallbit ?? stubWallbit,
   };
 }

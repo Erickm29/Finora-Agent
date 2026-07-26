@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { FinoraError, CreateGoalInputSchema, PatchGoalInputSchema } from "@finora/shared";
 import { randomUUID } from "node:crypto";
-import { services } from "../container.js";
+import type { InvestmentAnalysis } from "@finora/domain";
+import { getGoalAnalysisService, services } from "../container.js";
 import { runAgentTurn } from "../agent/runtime.js";
 import { getBotUsername } from "../bot/telegram.js";
 import { AgentTurnInputSchema } from "@finora/shared";
@@ -59,6 +60,25 @@ function serializeGoal(g: {
   };
 }
 
+/** `null` significa que el pipeline todavía no arrancó para esa meta. */
+function serializeAnalysis(a: InvestmentAnalysis | null) {
+  if (!a) return { status: "pending" as const, analysis: null };
+  return {
+    status: a.status,
+    analysis: {
+      goal_id: a.goalId,
+      status: a.status,
+      content: a.content,
+      sources: a.sources,
+      provider: a.provider,
+      model: a.model,
+      error: a.error,
+      generated_at: a.generatedAt,
+      updated_at: a.updatedAt,
+    },
+  };
+}
+
 /** Dev/local auth: X-User-Id header or Bearer demo. */
 v1.use("*", async (c, next) => {
   if (c.req.path.endsWith("/health")) return next();
@@ -112,7 +132,36 @@ v1.post("/goals", async (c) => {
   try {
     const body = CreateGoalInputSchema.parse(await c.req.json());
     const g = await services().goals.create(c.get("userId"), body);
+    // Mismo pipeline que Telegram, en segundo plano: la respuesta no espera.
+    getGoalAnalysisService().schedule(g);
     return c.json(serializeGoal(g), 201);
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.get("/goals/:id/analysis", async (c) => {
+  try {
+    const userId = c.get("userId");
+    const goalId = c.req.param("id");
+    await services().goals.get(userId, goalId);
+    const analysis = await getGoalAnalysisService().get(userId, goalId);
+    return c.json(serializeAnalysis(analysis));
+  } catch (err) {
+    const m = mapError(err);
+    return c.json(m.body, m.status as 400);
+  }
+});
+
+v1.post("/goals/:id/analysis/refresh", async (c) => {
+  try {
+    const userId = c.get("userId");
+    const goal = await services().goals.get(userId, c.req.param("id"));
+    const analysis = await getGoalAnalysisService().ensureFresh(goal, {
+      force: true,
+    });
+    return c.json(serializeAnalysis(analysis));
   } catch (err) {
     const m = mapError(err);
     return c.json(m.body, m.status as 400);

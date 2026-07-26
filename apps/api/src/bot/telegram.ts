@@ -4,6 +4,7 @@ import { FinoraError } from "@finora/shared";
 import { env } from "../env.js";
 import { services } from "../container.js";
 import { runAgentTurn, type AgentReply } from "../agent/runtime.js";
+import { registerChannelNotifier } from "../agent/notifier.js";
 
 let bot: Bot | null = null;
 
@@ -112,11 +113,21 @@ export async function getBotUsername(): Promise<string | null> {
   }
 }
 
+/** Mensaje proactivo (sin `ctx`), por ejemplo el plan de inversión ya listo. */
+async function sendProactiveMessage(chatId: string, text: string) {
+  const b = getBot();
+  if (!b) return;
+  for (const chunk of splitForTelegram(text)) {
+    await b.api.sendMessage(chatId, chunk);
+  }
+}
+
 export function getBot(): Bot | null {
   if (!env.telegramBotToken) return null;
   if (bot) return bot;
 
   bot = new Bot(env.telegramBotToken);
+  registerChannelNotifier("telegram", sendProactiveMessage);
 
   // Red de seguridad: sin esto, un handler que lanza deja al usuario sin
   // respuesta y el error solo aparece en los logs.

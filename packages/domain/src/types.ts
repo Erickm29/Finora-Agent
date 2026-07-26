@@ -155,6 +155,97 @@ export interface ConversationsRepo {
   touchSession(sessionId: string, activeGoalId?: string | null): Promise<void>;
 }
 
+/** Una fuente económica ya normalizada y deduplicada. */
+export type EconomicSource = {
+  provider: "firecrawl" | "exa" | "internal";
+  title: string;
+  url: string | null;
+  snippet: string | null;
+};
+
+/** Escenario probable, nunca presentado como un hecho. */
+export type ProjectedScenario = {
+  name: string;
+  likelihood: "alta" | "media" | "baja";
+  description: string;
+  impactOnGoal: string;
+};
+
+export type PlanRecommendation = {
+  action: string;
+  /** Por qué esta acción, atado al análisis económico. */
+  rationale: string;
+  amountBobs: number | null;
+  cadence: "unica" | "semanal" | "quincenal" | "mensual" | null;
+};
+
+export type InvestmentAnalysisContent = {
+  economicSummary: string;
+  scenarios: ProjectedScenario[];
+  recommendations: PlanRecommendation[];
+  risks: string[];
+  confidence: "alta" | "media" | "baja";
+  /** Cuánta evidencia externa respalda el análisis. */
+  dataCoverage: "completa" | "parcial" | "sin-fuentes";
+};
+
+export type InvestmentAnalysisStatus = "pending" | "ready" | "failed";
+
+export type InvestmentAnalysis = {
+  id: string;
+  goalId: string;
+  userId: string;
+  status: InvestmentAnalysisStatus;
+  content: InvestmentAnalysisContent | null;
+  sources: EconomicSource[];
+  provider: string | null;
+  model: string | null;
+  error: string | null;
+  generatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsertInvestmentAnalysisInput = {
+  goalId: string;
+  userId: string;
+  status: InvestmentAnalysisStatus;
+  content?: InvestmentAnalysisContent | null;
+  sources?: EconomicSource[];
+  provider?: string | null;
+  model?: string | null;
+  error?: string | null;
+  generatedAt?: string | null;
+};
+
+export interface GoalAnalysisRepo {
+  getByGoal(userId: string, goalId: string): Promise<InvestmentAnalysis | null>;
+  upsert(input: UpsertInvestmentAnalysisInput): Promise<InvestmentAnalysis>;
+}
+
+export type MarketSnapshotSource = "firecrawl" | "exa";
+
+export type MarketSnapshot = {
+  query: string;
+  source: MarketSnapshotSource;
+  data: unknown;
+  fetchedAt: string;
+};
+
+/** Caché de resultados crudos de Firecrawl/Exa, compartida entre usuarios. */
+export interface MarketSnapshotsRepo {
+  getFresh(
+    query: string,
+    source: MarketSnapshotSource,
+    maxAgeMs: number,
+  ): Promise<MarketSnapshot | null>;
+  save(
+    query: string,
+    source: MarketSnapshotSource,
+    data: unknown,
+  ): Promise<void>;
+}
+
 export interface WallbitClient {
   /** Execute conversion only after human confirm. Stub until Paso 7. */
   executeConvert(payload: Record<string, unknown>): Promise<{
@@ -169,5 +260,7 @@ export type DomainRepos = {
   pendingActions: PendingActionsRepo;
   profiles: ProfilesRepo;
   conversations: ConversationsRepo;
+  goalAnalyses: GoalAnalysisRepo;
+  marketSnapshots: MarketSnapshotsRepo;
   wallbit: WallbitClient;
 };

@@ -1,7 +1,7 @@
 {
   "providers": ["groq", "gemini", "openrouter"],
   "models": {
-    "groq": ["llama-3.3-70b-versatile", "qwen/qwen3-32b"],
+    "groq": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
     "gemini": ["gemini-2.5-flash"],
     "openrouter": ["deepseek/deepseek-chat-v3", "qwen/qwen3-32b"]
   },

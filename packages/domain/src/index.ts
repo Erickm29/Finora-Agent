@@ -9,5 +9,7 @@ export {
   InMemoryPendingActionsRepo,
   InMemoryProfilesRepo,
   InMemoryConversationsRepo,
+  InMemoryGoalAnalysisRepo,
+  InMemoryMarketSnapshotsRepo,
 } from "./memory.js";
 export type * from "./types.js";

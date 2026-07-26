@@ -15,6 +15,8 @@ import CapitalDistributionCard from '../components/dashboard/CapitalDistribution
 import ActivityPanel from '../components/dashboard/ActivityPanel'
 import ActionConfirmationModal from '../components/modals/ActionConfirmationModal'
 import type { ActionConfirmationData } from '../components/modals/ActionConfirmationModal'
+import InvestmentPlanCard from '../components/analysis/InvestmentPlanCard'
+import { useGoalAnalysis } from '../hooks/useGoalAnalysis'
 import { useGoals } from '../hooks/useGoals'
 import { useRecommendations } from '../hooks/useRecommendations'
 import { useTransactions } from '../hooks/useTransactions'
@@ -32,6 +34,8 @@ export default function DashboardPage() {
     recommendationId: string
     data: ActionConfirmationData
   } | null>(null)
+  // Antes de los returns tempranos: los hooks no pueden llamarse condicionalmente.
+  const analysis = useGoalAnalysis(goals?.[0]?.id ?? null)
 
   const showTelegramBanner = !telegramLoading && telegramStatus !== null && !telegramStatus.linked
 
@@ -126,6 +130,16 @@ export default function DashboardPage() {
           ) : (
             <AlertsPanel recommendations={recommendations} />
           )}
+
+          <div className="col-span-12">
+            <InvestmentPlanCard
+              analysis={analysis.analysis}
+              pending={analysis.pending}
+              refreshing={analysis.refreshing}
+              error={analysis.error}
+              onRefresh={() => void analysis.refresh()}
+            />
+          </div>
 
           {otherGoals.length > 0 && (
             <section className="col-span-12">

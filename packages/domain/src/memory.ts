@@ -11,12 +11,18 @@ import type {
   ConversationsRepo,
   DomainRepos,
   Goal,
+  GoalAnalysisRepo,
   GoalTransaction,
   GoalsRepo,
+  InvestmentAnalysis,
+  MarketSnapshot,
+  MarketSnapshotSource,
+  MarketSnapshotsRepo,
   PendingAction,
   PendingActionsRepo,
   Profile,
   ProfilesRepo,
+  UpsertInvestmentAnalysisInput,
   WallbitClient,
 } from "./types.js";
 
@@ -340,6 +346,65 @@ export class InMemoryConversationsRepo implements ConversationsRepo {
   }
 }
 
+export class InMemoryGoalAnalysisRepo implements GoalAnalysisRepo {
+  analyses = new Map<string, InvestmentAnalysis>();
+
+  async getByGoal(userId: string, goalId: string) {
+    const found = this.analyses.get(goalId);
+    if (!found || found.userId !== userId) return null;
+    return found;
+  }
+
+  async upsert(input: UpsertInvestmentAnalysisInput) {
+    const now = new Date().toISOString();
+    const previous = this.analyses.get(input.goalId);
+    const next: InvestmentAnalysis = {
+      id: previous?.id ?? randomUUID(),
+      goalId: input.goalId,
+      userId: input.userId,
+      status: input.status,
+      content: input.content ?? null,
+      sources: input.sources ?? [],
+      provider: input.provider ?? null,
+      model: input.model ?? null,
+      error: input.error ?? null,
+      generatedAt: input.generatedAt ?? null,
+      createdAt: previous?.createdAt ?? now,
+      updatedAt: now,
+    };
+    this.analyses.set(input.goalId, next);
+    return next;
+  }
+}
+
+export class InMemoryMarketSnapshotsRepo implements MarketSnapshotsRepo {
+  snapshots = new Map<string, MarketSnapshot>();
+
+  private key(query: string, source: MarketSnapshotSource) {
+    return `${source}:${query}`;
+  }
+
+  async getFresh(
+    query: string,
+    source: MarketSnapshotSource,
+    maxAgeMs: number,
+  ) {
+    const found = this.snapshots.get(this.key(query, source));
+    if (!found) return null;
+    const age = Date.now() - new Date(found.fetchedAt).getTime();
+    return age <= maxAgeMs ? found : null;
+  }
+
+  async save(query: string, source: MarketSnapshotSource, data: unknown) {
+    this.snapshots.set(this.key(query, source), {
+      query,
+      source,
+      data,
+      fetchedAt: new Date().toISOString(),
+    });
+  }
+}
+
 export const stubWallbit: WallbitClient = {
   async executeConvert(payload) {
     return { ok: true, result: { stub: true, payload } };
@@ -354,6 +419,8 @@ export function createInMemoryRepos(
     pendingActions: new InMemoryPendingActionsRepo(),
     profiles: new InMemoryProfilesRepo(),
     conversations: new InMemoryConversationsRepo(),
+    goalAnalyses: new InMemoryGoalAnalysisRepo(),
+    marketSnapshots: new InMemoryMarketSnapshotsRepo(),
     wallbit,
   };
 }
