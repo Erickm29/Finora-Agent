@@ -1,43 +1,56 @@
 /**
  * Market context contracts — GET /v1/market/context (Sprint 2, Track C).
- *
- * PENDING VALIDATION WITH BACKEND: el endpoint todavía no existe en la API;
- * este contrato sigue el acordado en el sprint (rates + portfolio + assets +
- * macro opcional). Hasta que Track C lo publique, el servicio web deja el
- * panel en un estado de error honesto en vez de inventar datos.
+ * Espejo camelCase del `MarketContextResponse` real de
+ * `apps/api/src/analysis/market-context.ts` (Wallbit + Exa de respaldo).
  */
 export interface MarketRate {
-  /** Par de referencia, p. ej. "USD/BOB". */
-  pair: string
-  value: number
+  from: string
+  to: string
+  rate: number | null
+}
+
+export interface MarketPosition {
+  symbol: string
+  shares: number
+}
+
+export interface MarketPortfolio {
+  usdCash: number | null
+  positions: MarketPosition[]
 }
 
 export interface MarketAsset {
   symbol: string
   name?: string
-  quantity?: number
-  valueBobs?: number
-  changePct?: number
+  price?: number | null
+  currency?: string | null
 }
 
-export interface MarketPortfolio {
-  totalValueBobs?: number
-  currency?: string
-  stocksValueBobs?: number
+export interface MarketMacro {
+  ok: boolean
+  summary?: string
+  highlights?: { title: string; url: string; snippet?: string }[]
+  source: string
+  error?: string
 }
 
 /**
- * `wallbit`: datos frescos de la API pública de Wallbit.
- * `partial`: Wallbit falló pero hay contexto macro (Exa) de respaldo.
- * `stub`: datos de ejemplo (modo mock, sin backend real).
+ * `wallbit`: Wallbit + Exa con datos frescos.
+ * `partial`: solo una de las dos fuentes respondió.
+ * `fallback`: ninguna respondió (`stub` además marca que Wallbit no está configurado).
  */
-export type MarketContextSource = 'wallbit' | 'partial' | 'stub' | string
+export type MarketContextSource = 'wallbit' | 'partial' | 'fallback'
 
 export interface MarketContext {
-  rates: MarketRate[]
+  source: MarketContextSource
+  stub: boolean
+  generatedAt: string
+  configured: boolean
+  rate: MarketRate | null
   portfolio: MarketPortfolio | null
   assets: MarketAsset[]
-  macro?: string | null
-  source: MarketContextSource
-  stub?: boolean
+  errors: string[]
+  macro: MarketMacro | null
+  /** Resumen ya armado por el backend (2-3 líneas), listo para mostrar tal cual. */
+  insights: string[]
 }

@@ -31,7 +31,7 @@ export function useGoals() {
       setMutatingId(id)
       setActionError(null)
       try {
-        await setPrimaryGoalService(data ?? [], id)
+        await setPrimaryGoalService(id)
         refetch()
       } catch (err) {
         const message = err instanceof ApiError ? err.message : 'No se pudo marcar la meta como prioritaria.'
@@ -41,7 +41,7 @@ export function useGoals() {
         setMutatingId(null)
       }
     },
-    [data, refetch],
+    [refetch],
   )
 
   return { data, loading, error, refetch, cancelGoal, setPrimary, mutatingId, actionError }

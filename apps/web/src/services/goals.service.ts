@@ -57,39 +57,22 @@ export async function createGoal(payload: CreateGoalPayload): Promise<Goal> {
 /** Soft-delete: la meta pasa a `cancelled` y desaparece de las listas activas. */
 export async function cancelGoal(id: string): Promise<Goal> {
   if (USE_MOCKS) return mockCancelGoal(id)
-  const updated = await apiRequest<ApiGoal>(`/goals/${id}`, {
-    method: 'PATCH',
-    body: { status: 'cancelled' },
-  })
+  const updated = await apiRequest<ApiGoal>(`/goals/${id}/cancel`, { method: 'POST' })
   return mapApiGoal(updated)
 }
 
 /**
- * Marca `id` como meta prioritaria y limpia el flag en las demás. El backend
- * mergea `metadata` en vez de sobreescribirlo (ver `GoalsService.patch`), así
- * que estos PATCH parciales no pisan `category`/`currency` ya guardados.
- *
- * `currentGoals` se recibe para saber qué otras metas hay que "despriorizar"
- * sin depender de un endpoint dedicado (fallback acordado si Track C —la capa
- * de dominio/Wallbit— todavía no expone `GoalsService.setPrimary`).
+ * Marca `id` como meta prioritaria. El backend (`GoalsService.setPrimary`)
+ * limpia el flag en el resto de las metas del usuario de forma atómica.
  */
-export async function setPrimaryGoal(currentGoals: Goal[], id: string): Promise<Goal[]> {
-  if (USE_MOCKS) return mockSetPrimaryGoal(id)
-
-  const previousPrimaries = currentGoals.filter((g) => g.isPrimary && g.id !== id)
-  await apiRequest<ApiGoal>(`/goals/${id}`, {
-    method: 'PATCH',
-    body: { metadata: { is_primary: true } },
-  })
-  await Promise.all(
-    previousPrimaries.map((g) =>
-      apiRequest<ApiGoal>(`/goals/${g.id}`, {
-        method: 'PATCH',
-        body: { metadata: { is_primary: false } },
-      }),
-    ),
-  )
-  return getGoals()
+export async function setPrimaryGoal(id: string): Promise<Goal> {
+  if (USE_MOCKS) {
+    await mockSetPrimaryGoal(id)
+    const goals = await mockGetGoals()
+    return goals.find((g) => g.id === id) ?? goals[0]
+  }
+  const updated = await apiRequest<ApiGoal>(`/goals/${id}/primary`, { method: 'POST' })
+  return mapApiGoal(updated)
 }
 
 const GOAL_CATEGORIES: GoalCategory[] = ['buy', 'save', 'emergency', 'other']
