@@ -28,7 +28,10 @@ export default function DashboardPage() {
   const { recommendations, loading: recsLoading, error: recsError, respond, respondingId } = useRecommendations()
   const { data: transactions, loading: txLoading, error: txError, refetch: refetchTx } = useTransactions()
   const { status: telegramStatus, loading: telegramLoading } = useTelegramLink()
-  const [confirmation, setConfirmation] = useState<ActionConfirmationData | null>(null)
+  const [confirmation, setConfirmation] = useState<{
+    recommendationId: string
+    data: ActionConfirmationData
+  } | null>(null)
 
   const showTelegramBanner = !telegramLoading && telegramStatus !== null && !telegramStatus.linked
 
@@ -74,13 +77,18 @@ export default function DashboardPage() {
   const otherGoals = goals.slice(1)
   const pendingRecommendation = recommendations.find((rec) => rec.status === 'pending') ?? null
 
-  const handleAcceptRecommendation = async (id: string) => {
+  /**
+   * Solo abre el modal. La acción no se envía al backend hasta que el usuario
+   * la aprueba dentro del modal: ese es el punto de confirmación humana.
+   */
+  const handleAcceptRecommendation = (id: string) => {
     const recommendation = recommendations.find((rec) => rec.id === id)
-    await respond(id, 'accept')
-    if (recommendation) {
-      setConfirmation({
-        title: 'Recomendación aplicada',
-        subtitle: 'Micro-ahorro confirmado',
+    if (!recommendation) return
+    setConfirmation({
+      recommendationId: id,
+      data: {
+        title: 'Confirmá la acción',
+        subtitle: 'Finora no mueve dinero sin tu OK',
         statement: recommendation.message,
         reason: 'Basado en el análisis de tus metas activas y tu ritmo de ahorro actual.',
         amount: recommendation.suggestedAmount ?? 0,
@@ -89,10 +97,10 @@ export default function DashboardPage() {
         // `Recommendation` (ver types/recommendation.ts) todavía no expone esos campos
         // desde el backend/mock. Pendiente de validar con Backend si se agregarán.
         riskReductionNote: 'Este ajuste no afecta tu presupuesto esencial del mes.',
-        reversibleNote: 'Puedes revertir este movimiento desde el historial dentro de las próximas 24 horas.',
-        confirmLabel: 'Confirmar aplicación',
-      })
-    }
+        reversibleNote: 'Podés cancelar la acción mientras siga pendiente.',
+        confirmLabel: 'Confirmar y aplicar',
+      },
+    })
   }
 
   return (
@@ -156,7 +164,14 @@ export default function DashboardPage() {
         <Icon name="smart_toy" className="text-3xl" filled />
       </button>
 
-      <ActionConfirmationModal open={Boolean(confirmation)} data={confirmation} onClose={() => setConfirmation(null)} />
+      <ActionConfirmationModal
+        open={Boolean(confirmation)}
+        data={confirmation?.data ?? null}
+        onClose={() => setConfirmation(null)}
+        onConfirmed={async () => {
+          if (confirmation) await respond(confirmation.recommendationId, 'accept')
+        }}
+      />
     </AppShellLayout>
   )
 }

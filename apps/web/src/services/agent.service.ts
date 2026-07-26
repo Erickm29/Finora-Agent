@@ -80,31 +80,33 @@ export async function respondToChatAction(
       : callbacks.cancel
     : null
 
-  if (callback) {
-    const result = await apiRequest<AgentTurnResponse>('/agent/turn', {
-      method: 'POST',
-      body: {
-        channel: 'web',
-        text: null,
-        callbackData: callback,
-      },
-    })
-    const confirmation = mapReplyToMessage(
-      result.replies[0] ?? {
-        type: 'text',
-        text: wantConfirm ? 'Acción confirmada.' : 'Acción cancelada.',
-      },
+  if (!callback) {
+    // Sin callback no hay nada que confirmar en el backend. Antes se devolvía
+    // "Listo. Acción confirmada." sin llamar a la API, que es exactamente la
+    // mentira que el pilar de confirmación humana no puede permitirse.
+    throw new Error(
+      'No pudimos identificar la acción a confirmar. Refrescá el chat y pedísela de nuevo al agente.',
     )
-    webChatHistory = [...webChatHistory, confirmation]
-    return confirmation
   }
 
-  const confirmation: ChatMessage = {
-    id: crypto.randomUUID(),
-    from: 'agent',
-    text: wantConfirm ? 'Listo. Acción confirmada.' : 'Acción cancelada. Vos decidís.',
-    createdAt: new Date().toISOString(),
-  }
+  const result = await apiRequest<AgentTurnResponse>('/agent/turn', {
+    method: 'POST',
+    body: {
+      channel: 'web',
+      text: null,
+      callbackData: callback,
+    },
+  })
+
+  // La acción ya se resolvió: sus callbacks quedan obsoletos.
+  messageCallbacks.delete(payload.messageId)
+
+  const confirmation = mapReplyToMessage(
+    result.replies[0] ?? {
+      type: 'text',
+      text: wantConfirm ? 'Acción confirmada.' : 'Acción cancelada.',
+    },
+  )
   webChatHistory = [...webChatHistory, confirmation]
   return confirmation
 }

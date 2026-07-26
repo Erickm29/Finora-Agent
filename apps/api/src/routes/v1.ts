@@ -38,6 +38,7 @@ function serializeGoal(g: {
   status: string;
   progressRatio?: number;
   productUrl?: string | null;
+  createdAt?: string;
 }) {
   return {
     id: g.id,
@@ -51,6 +52,9 @@ function serializeGoal(g: {
       g.progressRatio ??
       (g.targetAmountBobs > 0 ? g.accumulatedBobs / g.targetAmountBobs : 0),
     product_url: g.productUrl ?? null,
+    // El dashboard lo necesita para calcular si la meta va adelantada o
+    // atrasada; sin esto tiene que inventar la fecha de inicio.
+    created_at: g.createdAt ?? null,
   };
 }
 
@@ -86,18 +90,7 @@ v1.use("*", async (c, next) => {
 v1.get("/goals", async (c) => {
   try {
     const goals = await services().goals.list(c.get("userId"));
-    return c.json({
-      goals: goals.map((g) => ({
-        id: g.id,
-        name: g.name,
-        target_amount_bobs: g.targetAmountBobs,
-        target_months: g.targetMonths,
-        base_monthly_bobs: g.baseMonthlyBobs,
-        accumulated_bobs: g.accumulatedBobs,
-        status: g.status,
-        progress_ratio: g.progressRatio,
-      })),
-    });
+    return c.json({ goals: goals.map(serializeGoal) });
   } catch (err) {
     const m = mapError(err);
     return c.json(m.body, m.status as 400);

@@ -17,7 +17,11 @@ export function useRecommendations() {
         await agentService.respondToRecommendation(id, action)
         refetch()
       } catch (err) {
-        setActionError(err instanceof ApiError ? err.message : 'No se pudo procesar la recomendación.')
+        const message = err instanceof ApiError ? err.message : 'No se pudo procesar la recomendación.'
+        setActionError(message)
+        // Se relanza para que quien dispara la confirmación (el modal) pueda
+        // mantenerse abierto y mostrar el fallo en lugar de declarar éxito.
+        throw new Error(message)
       } finally {
         setRespondingId(null)
       }

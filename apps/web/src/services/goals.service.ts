@@ -14,6 +14,7 @@ interface ApiGoal {
   status: string
   progress_ratio?: number
   product_url?: string | null
+  created_at?: string | null
 }
 
 interface GoalsListResponse {
@@ -54,8 +55,8 @@ export async function createGoal(payload: CreateGoalPayload): Promise<Goal> {
 
 function mapApiGoal(g: ApiGoal, categoryHint?: GoalCategory): Goal {
   const metaCategory = categoryHint ?? 'other'
-  const deadline = addMonthsIso(g.target_months)
   const status = normalizeStatus(g.status)
+  const createdAt = g.created_at ?? new Date().toISOString()
 
   return {
     id: g.id,
@@ -65,11 +66,13 @@ function mapApiGoal(g: ApiGoal, categoryHint?: GoalCategory): Goal {
     targetAmount: g.target_amount_bobs,
     currentAmount: g.accumulated_bobs,
     currency: 'BOB',
-    deadline,
+    // El plazo corre desde que se creó la meta, no desde hoy: si se calculara
+    // desde hoy el avance esperado sería siempre 0% y todo saldría "a tiempo".
+    deadline: addMonthsIso(g.target_months, createdAt),
     monthlySuggested: g.base_monthly_bobs,
     status,
     priority: 'Media',
-    createdAt: new Date().toISOString(),
+    createdAt,
   }
 }
 
@@ -91,8 +94,9 @@ function categoryIcon(category: GoalCategory): string {
   }
 }
 
-function addMonthsIso(months: number): string {
-  const d = new Date()
+function addMonthsIso(months: number, fromIso: string): string {
+  const d = new Date(fromIso)
+  if (Number.isNaN(d.getTime())) d.setTime(Date.now())
   d.setMonth(d.getMonth() + months)
   return d.toISOString()
 }

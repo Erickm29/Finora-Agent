@@ -29,8 +29,16 @@ export async function getTransactions(goalId?: string): Promise<Transaction[]> {
   }
 
   const goals = await getGoals()
-  const batches = await Promise.all(goals.map((g) => fetchForGoal(g.id)))
-  return batches.flat().sort((a, b) => b.date.localeCompare(a.date))
+  // allSettled y no all: que una meta que falla no borre el historial completo
+  // del dashboard.
+  const batches = await Promise.allSettled(goals.map((g) => fetchForGoal(g.id)))
+  const failed = batches.filter((b) => b.status === 'rejected').length
+  if (failed > 0) {
+    console.warn(`[finora] ${failed} de ${goals.length} metas no devolvieron transacciones`)
+  }
+  return batches
+    .flatMap((b) => (b.status === 'fulfilled' ? b.value : []))
+    .sort((a, b) => b.date.localeCompare(a.date))
 }
 
 async function fetchForGoal(goalId: string): Promise<Transaction[]> {

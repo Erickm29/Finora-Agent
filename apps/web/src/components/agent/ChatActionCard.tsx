@@ -33,14 +33,23 @@ export default function ChatActionCard({ action, resolution, onRespond, onOpenWa
 
   if (action.type === 'micro_saving_proposal') {
     const { goalName, amount, currency } = action.data
+    // El turno del agente puede traer solo botones, sin monto ni meta
+    // estructurados; en ese caso el detalle ya está en el texto del mensaje.
+    const hasDetail = amount > 0 && Boolean(goalName)
     return (
       <div className="bg-mint/10 border border-mint/30 rounded-2xl p-5 max-w-md space-y-3">
         <div className="flex items-center gap-2 text-forest-green font-bold text-label-md">
           <Icon name="savings" /> Propuesta de micro-ahorro
         </div>
         <p className="text-body-md text-on-surface">
-          Sumar <span className="font-bold text-kelly-green">{amount.toLocaleString('es')} {currency}</span> a tu meta "
-          {goalName}" este mes.
+          {hasDetail ? (
+            <>
+              Sumar <span className="font-bold text-kelly-green">{amount.toLocaleString('es')} {currency}</span> a tu
+              meta "{goalName}" este mes.
+            </>
+          ) : (
+            'Finora dejó la acción preparada. Se aplica solo si la confirmás.'
+          )}
         </p>
         <div className="flex gap-3">
           <button

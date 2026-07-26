@@ -24,7 +24,8 @@ interface ActionConfirmationModalProps {
   open: boolean
   data: ActionConfirmationData | null
   onClose: () => void
-  onConfirmed?: () => void
+  /** Puede ser async: el modal espera el resultado antes de declarar éxito. */
+  onConfirmed?: () => void | Promise<void>
 }
 
 /**
@@ -35,6 +36,8 @@ interface ActionConfirmationModalProps {
 export default function ActionConfirmationModal({ open, data, onClose, onConfirmed }: ActionConfirmationModalProps) {
   const [progressWidth, setProgressWidth] = useState(0)
   const [showToast, setShowToast] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open || !data || data.successProbabilityAfter === undefined) {
@@ -45,22 +48,50 @@ export default function ActionConfirmationModal({ open, data, onClose, onConfirm
     return () => clearTimeout(timer)
   }, [open, data])
 
+  useEffect(() => {
+    if (open) setError(null)
+  }, [open, data])
+
   if (!open || !data) return null
 
   const hasProbabilityImpact = data.successProbabilityBefore !== undefined && data.successProbabilityAfter !== undefined
 
-  const handleConfirm = () => {
-    setShowToast(true)
-    onConfirmed?.()
-    setTimeout(() => {
-      setShowToast(false)
-      onClose()
-    }, 2200)
+  /**
+   * La operación financiera ocurre acá dentro: el toast de éxito solo aparece
+   * después de que `onConfirmed` resuelve. Si falla, el modal queda abierto con
+   * el error para que el usuario pueda reintentar o cancelar.
+   */
+  const handleConfirm = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await onConfirmed?.()
+      setShowToast(true)
+      setTimeout(() => {
+        setShowToast(false)
+        onClose()
+      }, 2200)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No pudimos confirmar la acción. Intentá de nuevo.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const requestClose = () => {
+    if (submitting) return
+    onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="action-confirmation-title"
+    >
+      <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm" onClick={requestClose} />
 
       <div className="relative z-10 w-full max-w-2xl bg-surface-container-lowest rounded-[24px] shadow-2xl border border-outline-variant/30 overflow-hidden mint-glow">
         <div className="bg-primary-container p-stack-md text-white flex items-center gap-stack-md">
@@ -68,7 +99,9 @@ export default function ActionConfirmationModal({ open, data, onClose, onConfirm
             <Icon name="smart_toy" className="text-tertiary-fixed" style={{ fontSize: 32 }} filled />
           </div>
           <div>
-            <h1 className="text-headline-md font-headline-md text-secondary-fixed">{data.title}</h1>
+            <h1 id="action-confirmation-title" className="text-headline-md font-headline-md text-secondary-fixed">
+              {data.title}
+            </h1>
             <p className="text-label-md font-label-md text-on-primary-container">{data.subtitle}</p>
           </div>
         </div>
@@ -147,21 +180,33 @@ export default function ActionConfirmationModal({ open, data, onClose, onConfirm
             </div>
           </div>
 
+          {error && (
+            <div
+              role="alert"
+              className="flex items-center gap-2 p-3 rounded-lg bg-error-container/30 border border-error/30"
+            >
+              <Icon name="error" className="text-error" />
+              <p className="text-body-md font-body-md text-on-surface">{error}</p>
+            </div>
+          )}
+
           <div className="flex flex-col-reverse sm:flex-row gap-stack-sm pt-4">
             <button
-              className="flex-1 px-6 py-4 rounded-lg border-2 border-primary text-primary font-headline-md text-label-md hover:bg-primary/5 transition-all duration-200 active:scale-95"
-              onClick={onClose}
+              className="flex-1 px-6 py-4 rounded-lg border-2 border-primary text-primary font-headline-md text-label-md hover:bg-primary/5 transition-all duration-200 active:scale-95 disabled:opacity-50"
+              onClick={requestClose}
+              disabled={submitting}
               type="button"
             >
               Cancelar
             </button>
             <button
-              className="flex-[2] px-6 py-4 rounded-lg bg-primary text-white font-headline-md text-label-md shadow-lg shadow-primary/20 hover:opacity-90 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              className="flex-[2] px-6 py-4 rounded-lg bg-primary text-white font-headline-md text-label-md shadow-lg shadow-primary/20 hover:opacity-90 transition-all duration-200 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
               onClick={handleConfirm}
+              disabled={submitting}
               type="button"
             >
-              <Icon name="check_circle" />
-              {data.confirmLabel ?? 'Confirmar Conversión'}
+              <Icon name={submitting ? 'progress_activity' : 'check_circle'} />
+              {submitting ? 'Confirmando...' : (data.confirmLabel ?? 'Confirmar Conversión')}
             </button>
           </div>
         </div>

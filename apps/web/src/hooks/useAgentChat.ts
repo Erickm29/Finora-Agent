@@ -35,29 +35,39 @@ export function useAgentChat() {
       const updated = await agentService.sendMessage({ text })
       setMessages(updated)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo enviar el mensaje. Intenta de nuevo.')
+      setError(readErrorMessage(err, 'No se pudo enviar el mensaje. Intenta de nuevo.'))
     } finally {
       setSending(false)
     }
   }, [])
 
   const resolveAction = useCallback(async (payload: ChatActionResponsePayload) => {
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === payload.messageId
-          ? { ...msg, actionResolution: mapActionToResolution(payload.action) }
-          : msg,
-      ),
-    )
+    setError(null)
     try {
       const confirmation = await agentService.respondToChatAction(payload)
-      setMessages((prev) => [...prev, confirmation])
+      // La acción se marca como resuelta recién cuando el backend respondió: si
+      // se marcara antes, un fallo dejaría al usuario viendo "Confirmaste esta
+      // operación" sobre algo que nunca se ejecutó.
+      setMessages((prev) => [
+        ...prev.map((msg) =>
+          msg.id === payload.messageId
+            ? { ...msg, actionResolution: mapActionToResolution(payload.action) }
+            : msg,
+        ),
+        confirmation,
+      ])
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo procesar tu respuesta.')
+      setError(readErrorMessage(err, 'No se pudo procesar tu respuesta.'))
     }
   }, [])
 
   return { messages, loading, sending, error, sendMessage, resolveAction }
+}
+
+function readErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) return err.message
+  if (err instanceof Error && err.message) return err.message
+  return fallback
 }
 
 function mapActionToResolution(action: ChatActionResponsePayload['action']): NonNullable<ChatMessage['actionResolution']> {
